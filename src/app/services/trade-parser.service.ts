@@ -56,8 +56,14 @@ export class TradeParserService {
         dateKey = `${year}-${month}-${day}`;
         timeStr = timestamp.toISOString();
       } else {
-        timeStr = String(timestamp);
-        // Handle "YYYY-MM-DD HH:mm:ss" or ISO "YYYY-MM-DDTHH:mm:ss"
+        const rawTime = String(timestamp).trim();
+        // If it doesn't have a timezone indicator (Z or +05:30 or -07:00), append Indian Standard Time (+05:30)
+        if (!rawTime.endsWith('Z') && !rawTime.includes('+') && !rawTime.match(/-\d{2}:\d{2}$/)) {
+          // Replace space with T for standard ISO date parsing
+          timeStr = rawTime.replace(' ', 'T') + '+05:30';
+        } else {
+          timeStr = rawTime;
+        }
         dateKey = timeStr.split(' ')[0].split('T')[0];
       }
 
