@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>14-Day Sleep & Learning Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at top left, #12131a, #0b0c10);
+      --card-bg: rgba(26, 28, 38, 0.6);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      
+      --color-sleep: #3b82f6;
+      --color-sleep-hover: #60a5fa;
+      --color-sleep-bg: rgba(59, 130, 246, 0.2);
+      
+      --color-learn: #10b981;
+      --color-learn-hover: #34d399;
+      --color-learn-bg: rgba(16, 185, 129, 0.2);
+      
+      --color-empty: rgba(255, 255, 255, 0.05);
+      --color-empty-hover: rgba(255, 255, 255, 0.12);
+      
+      --accent: #8b5cf6;
+      --accent-glow: rgba(139, 92, 246, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 2.5rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 30%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.025em;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    /* Dashboard Grid */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+    }
+
+    .card-sleep::before { background: var(--color-sleep); }
+    .card-learn::before { background: var(--color-learn); }
+    .card-target::before { background: var(--accent); }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .card-value {
+      font-size: 2.25rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Target Progress Indicator */
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), #a78bfa);
+      border-radius: 4px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    /* Paint Brush Controls */
+    .controls-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.25rem 2rem;
+      backdrop-filter: blur(16px);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brush-selector {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.6rem 1.2rem;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      color: var(--text-main);
+    }
+
+    .btn-sleep {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+    .btn-sleep.active {
+      background: var(--color-sleep);
+      border-color: var(--color-sleep-hover);
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-learn {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .btn-learn.active {
+      background: var(--color-learn);
+      border-color: var(--color-learn-hover);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-clear {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    .btn-clear.active {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .instructions {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      max-width: 400px;
+      text-align: right;
+    }
+
+    /* Grid Area */
+    .grid-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      backdrop-filter: blur(16px);
+      overflow-x: auto;
+    }
+
+    .grid-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      min-width: 850px;
+    }
+
+    .header-day-label {
+      width: 140px;
+      flex-shrink: 0;
+    }
+
+    .hour-markers {
+      display: flex;
+      flex-grow: 1;
+      justify-content: space-between;
+    }
+
+    .hour-marker {
+      width: calc(100% / 24);
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-right: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .day-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-width: 850px;
+    }
+
+    .day-row {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      padding: 0.5rem;
+      transition: background 0.2s ease;
+    }
+
+    .day-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .day-label {
+      width: 130px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      padding-left: 0.5rem;
+    }
+
+    .boxes {
+      display: flex;
+      flex-grow: 1;
+      gap: 4px;
+      padding: 0 0.5rem;
+    }
+
+    .box {
+      flex: 1;
+      height: 32px;
+      border-radius: 6px;
+      background: var(--color-empty);
+      cursor: crosshair;
+      transition: background 0.15s ease, transform 0.1s ease;
+      position: relative;
+    }
+
+    .box:hover {
+      background: var(--color-empty-hover);
+      transform: scale(1.05);
+      z-index: 2;
+    }
+
+    .box.sleep {
+      background: var(--color-sleep);
+    }
+    .box.sleep:hover {
+      background: var(--color-sleep-hover);
+    }
+
+    .box.learn {
+      background: var(--color-learn);
+    }
+    .box.learn:hover {
+      background: var(--color-learn-hover);
+    }
+
+    .box::after {
+      content: attr(data-time);
+      position: absolute;
+      bottom: 120%;
+      left: 50%;
+      transform: translateX(-50%) scale(0.85);
+      background: #1e293b;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .box:hover::after {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+      bottom: 130%;
+    }
+
+    .day-stats {
+      width: 130px;
+      text-align: right;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      padding-right: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-sleep { color: #60a5fa; }
+    .stat-learn { color: #34d399; }
+
+    /* Footer Buttons */
+    .footer-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Print styling */
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+        padding: 0;
+      }
+      .container { gap: 1rem; }
+      .card, .grid-container, .controls-wrapper {
+        background: #fff;
+        border: 1px solid #ddd;
+        box-shadow: none;
+        color: #000;
+      }
+      .box {
+        border: 1px solid #ccc;
+        background: #fff;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .box.sleep { background-color: #3b82f6 !important; }
+      .box.learn { background-color: #10b981 !important; }
+      .controls-wrapper, .footer-actions, .box::after {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>14-Day Sleep & Learning Tracker</h1>
+      <p class="subtitle">Track hourly patterns, build the learning habit, and hit 7+ days of growth</p>
+    </header>
+
+    <!-- Dashboard -->
+    <div class="dashboard">
+      <div class="card card-sleep">
+        <div class="card-title">Sleep Tracking</div>
+        <div class="card-value" id="stat-total-sleep">0 hrs</div>
+        <div class="card-desc" id="stat-avg-sleep">Avg: 0 hrs / night</div>
+      </div>
+      <div class="card card-learn">
+        <div class="card-title">Learning Habit</div>
+        <div class="card-value" id="stat-total-learn">0 hrs</div>
+        <div class="card-desc" id="stat-avg-learn">Avg: 0 hrs / day</div>
+      </div>
+      <div class="card card-target">
+        <div class="card-title">Habit Target (Goal: 7/14 Days)</div>
+        <div class="card-value" id="stat-target-count">0 / 14 Days</div>
+        <div class="card-desc" id="stat-target-desc">Do at least 30m of learning per day</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="target-progress"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Painting Controls -->
+    <div class="controls-wrapper">
+      <div class="brush-selector">
+        <button class="btn btn-sleep active" data-mode="sleep">
+          <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-sleep);"></span>
+          Paint Sleep
+        </button>
+        <button class="btn btn-learn" data-mode="learn">
+          <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--color-learn);"></span>
+          Paint Learning
+        </button>
+        <button class="btn btn-clear" data-mode="clear">
+          <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#fff;"></span>
+          Eraser
+        </button>
+      </div>
+      <div class="instructions">
+        💡 <strong>Click & drag</strong> across boxes to color multiple hours. Press <strong>S</strong> for Sleep, <strong>L</strong> for Learn, <strong>E</strong> or <strong>C</strong> for Eraser.
+      </div>
+    </div>
+
+    <!-- Tracking Grid -->
+    <div class="grid-container">
+      <div class="grid-header">
+        <div class="header-day-label"></div>
+        <div class="hour-markers">
+          <div class="hour-marker">12a</div>
+          <div class="hour-marker">1a</div>
+          <div class="hour-marker">2a</div>
+          <div class="hour-marker">3a</div>
+          <div class="hour-marker">4a</div>
+          <div class="hour-marker">5a</div>
+          <div class="hour-marker">6a</div>
+          <div class="hour-marker">7a</div>
+          <div class="hour-marker">8a</div>
+          <div class="hour-marker">9a</div>
+          <div class="hour-marker">10a</div>
+          <div class="hour-marker">11a</div>
+          <div class="hour-marker">12p</div>
+          <div class="hour-marker">1p</div>
+          <div class="hour-marker">2p</div>
+          <div class="hour-marker">3p</div>
+          <div class="hour-marker">4p</div>
+          <div class="hour-marker">5p</div>
+          <div class="hour-marker">6p</div>
+          <div class="hour-marker">7p</div>
+          <div class="hour-marker">8p</div>
+          <div class="hour-marker">9p</div>
+          <div class="hour-marker">10p</div>
+          <div class="hour-marker">11p</div>
+        </div>
+        <div style="width: 130px;"></div>
+      </div>
+
+      <div class="day-rows" id="day-rows-container">
+        <!-- JS inserts rows here -->
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="footer-actions">
+      <button class="btn btn-secondary" onclick="window.print()">🖨️ Print Tracker</button>
+      <button class="btn btn-secondary" onclick="exportData()">📤 Export Data</button>
+      <button class="btn btn-secondary" onclick="importData()">📥 Import Data</button>
+      <button class="btn btn-secondary" style="border-color: rgba(ef, 44, 44, 0.2); color: #ef4444;" onclick="resetAll()">⚠️ Reset All</button>
+    </div>
+  </div>
+
+  <script>
+    // State management
+    const START_DATE = new Date("2026-07-12"); // User's requested current date context or today
+    let currentMode = "sleep"; // 'sleep', 'learn', 'clear'
+    let isDrawing = false;
+
+    // 14 days, 24 hours each. Value: null, 'sleep', or 'learn'
+    let trackerData = JSON.parse(localStorage.getItem('sleep_learn_tracker_data')) || 
+                      Array(14).fill(null).map(() => Array(24).fill(null));
+
+    // Get element references
+    const dayRowsContainer = document.getElementById('day-rows-container');
+    const brushButtons = document.querySelectorAll('.brush-selector .btn');
+
+    // Setup brush selection UI
+    brushButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        brushButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+      });
+    });
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === 's') {
+        document.querySelector('[data-mode="sleep"]').click();
+      } else if (e.key.toLowerCase() === 'l') {
+        document.querySelector('[data-mode="learn"]').click();
+      } else if (e.key.toLowerCase() === 'c' || e.key.toLowerCase() === 'e') {
+        document.querySelector('[data-mode="clear"]').click();
+      }
+    });
+
+    // Global drag listener to disable default drag actions and catch mouseups
+    window.addEventListener('mousedown', () => { isDrawing = true; });
+    window.addEventListener('mouseup', () => { isDrawing = false; });
+
+    // Render Grid rows
+    function renderGrid() {
+      dayRowsContainer.innerHTML = '';
+      
+      for (let day = 0; day < 14; day++) {
+        const currentDate = new Date(START_DATE);
+        currentDate.setDate(START_DATE.getDate() + day);
+
+        const options = { weekday: 'short', month: 'short', day: 'numeric' };
+        const dateStr = currentDate.toLocaleDateString('en-US', options);
+
+        const row = document.createElement('div');
+        row.className = 'day-row';
+
+        // Day label
+        const label = document.createElement('div');
+        label.className = 'day-label';
+        label.innerText = `Day ${day + 1}: ${dateStr}`;
+        row.appendChild(label);
+
+        // Boxes container
+        const boxesContainer = document.createElement('div');
+        boxesContainer.className = 'boxes';
+
+        for (let hour = 0; hour < 24; hour++) {
+          const box = document.createElement('div');
+          box.className = 'box';
+          
+          // Apply stored class
+          const value = trackerData[day][hour];
+          if (value) box.classList.add(value);
+
+          // Labeled time formatting
+          const period = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+          box.setAttribute('data-time', `${displayHour}:00 ${period}`);
+
+          // Drawing handlers
+          box.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            paintBox(day, hour, box);
+          });
+
+          box.addEventListener('mouseenter', () => {
+            if (isDrawing) {
+              paintBox(day, hour, box);
+            }
+          });
+
+          boxesContainer.appendChild(box);
+        }
+        row.appendChild(boxesContainer);
+
+        // Day Statistics Summary
+        const stats = document.createElement('div');
+        stats.className = 'day-stats';
+        stats.id = `day-stat-${day}`;
+        row.appendChild(stats);
+
+        dayRowsContainer.appendChild(row);
+      }
+      updateStats();
+    }
+
+    function paintBox(day, hour, element) {
+      // Remove existing states
+      element.classList.remove('sleep', 'learn');
+
+      if (currentMode === 'sleep') {
+        trackerData[day][hour] = 'sleep';
+        element.classList.add('sleep');
+      } else if (currentMode === 'learn') {
+        trackerData[day][hour] = 'learn';
+        element.classList.add('learn');
+      } else {
+        trackerData[day][hour] = null;
+      }
+
+      saveData();
+      updateStats();
+    }
+
+    function saveData() {
+      localStorage.setItem('sleep_learn_tracker_data', JSON.stringify(trackerData));
+    }
+
+    function updateStats() {
+      let totalSleep = 0;
+      let totalLearn = 0;
+      let targetDaysMet = 0;
+
+      for (let day = 0; day < 14; day++) {
+        let daySleep = 0;
+        let dayLearn = 0;
+
+        for (let hour = 0; hour < 24; hour++) {
+          if (trackerData[day][hour] === 'sleep') daySleep++;
+          if (trackerData[day][hour] === 'learn') dayLearn++;
+        }
+
+        totalSleep += daySleep;
+        totalLearn += dayLearn;
+
+        // Habit target threshold: At least 1 hour (1 box filled)
+        // Since we are tracking hourly boxes, 1 cell = 1 hour.
+        if (dayLearn >= 1) {
+          targetDaysMet++;
+        }
+
+        // Update day-specific stats
+        const dayStatEl = document.getElementById(`day-stat-${day}`);
+        if (dayStatEl) {
+          dayStatEl.innerHTML = `
+            <span class="stat-sleep">Sleep: ${daySleep}h</span>
+            <span class="stat-learn">Learn: ${dayLearn}h</span>
+          `;
+        }
+      }
+
+      // Update Dashboard totals
+      document.getElementById('stat-total-sleep').innerText = `${totalSleep} hrs`;
+      document.getElementById('stat-total-learn').innerText = `${totalLearn} hrs`;
+      
+      const avgSleep = (totalSleep / 14).toFixed(1);
+      const avgLearn = (totalLearn / 14).toFixed(1);
+      document.getElementById('stat-avg-sleep').innerText = `Avg: ${avgSleep} hrs / night`;
+      document.getElementById('stat-avg-learn').innerText = `Avg: ${avgLearn} hrs / day`;
+
+      // Update progress towards target
+      document.getElementById('stat-target-count').innerText = `${targetDaysMet} / 14 Days`;
+      
+      const progressPercent = Math.min((targetDaysMet / 7) * 100, 100);
+      document.getElementById('target-progress').style.width = `${progressPercent}%`;
+
+      const targetDescEl = document.getElementById('stat-target-desc');
+      if (targetDaysMet >= 7) {
+        targetDescEl.innerHTML = `🎉 Target Achieved! Great job building consistency!`;
+      } else {
+        targetDescEl.innerText = `${7 - targetDaysMet} more days to hit your 7-day target.`;
+      }
+    }
+
+    // Export/Import/Reset actions
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trackerData));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `tracker-export-${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = readerEvent => {
+          try {
+            const parsed = JSON.parse(readerEvent.target.result);
+            if (Array.isArray(parsed) && parsed.length === 14) {
+              trackerData = parsed;
+              saveData();
+              renderGrid();
+            } else {
+              alert("Invalid backup file structure.");
+            }
+          } catch (err) {
+            alert("Error parsing file.");
+          }
+        }
+        reader.readAsText(file);
+      }
+      input.click();
+    }
+
+    function resetAll() {
+      if (confirm("Are you sure you want to clear all logged data? This cannot be undone.")) {
+        trackerData = Array(14).fill(null).map(() => Array(24).fill(null));
+        saveData();
+        renderGrid();
+      }
+    }
+
+    // Initialize on load
+    renderGrid();
+  </script>
+</body>
+</html>

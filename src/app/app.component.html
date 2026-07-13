@@ -1,0 +1,191 @@
+<div class="app-shell">
+  <!-- Top Navigation Bar -->
+  <nav class="topbar">
+    <div class="topbar-left">
+      <h1 class="logo">Tradebook <span class="logo-highlight">Analytics</span></h1>
+    </div>
+
+    <div class="topbar-nav">
+      <button class="nav-tab" [class.active]="activePage === 'calendar'" (click)="navigateTo('calendar')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        Calendar
+      </button>
+      <button class="nav-tab" [class.active]="activePage === 'dashboard'" (click)="navigateTo('dashboard')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+        Dashboard
+      </button>
+      <button class="nav-tab" [class.active]="activePage === 'data-sources'" (click)="navigateTo('data-sources')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        Data Sources
+      </button>
+    </div>
+
+    <div class="topbar-right">
+      <!-- Backend Server Status -->
+      <div class="server-status" [class.online]="isServerConnected" [class.offline]="!isServerConnected" [class.waking]="isWakingUp" (click)="!isServerConnected && !isWakingUp ? wakeBackend() : null" [style.cursor]="!isServerConnected && !isWakingUp ? 'pointer' : 'default'">
+        <span class="status-dot"></span>
+        <span class="status-text">{{ isWakingUp ? 'Waking Server...' : (isServerConnected ? 'Server Online' : 'Server Asleep') }}</span>
+        <button class="wake-btn" *ngIf="!isServerConnected || isWakingUp" [disabled]="isWakingUp" (click)="wakeBackend(); $event.stopPropagation();" title="Ping Backend Server">
+          <svg *ngIf="!isWakingUp" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          <span *ngIf="isWakingUp" class="mini-spinner"></span>
+        </button>
+      </div>
+
+      <!-- Zerodha Feed Connection Status -->
+      <div class="conn-status" *ngIf="isZerodhaLoggedIn && isServerConnected" [class.live]="isTickerConnected" [class.offline]="!isTickerConnected">
+        <span class="conn-dot" [class.live]="isTickerConnected" [class.offline]="!isTickerConnected"></span>
+        {{ isTickerConnected ? 'Feed Live' : 'Feed Offline' }}
+      </div>
+
+      <button class="topbar-login-btn" *ngIf="!isZerodhaLoggedIn && isServerConnected" (click)="loginZerodha()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+        Connect
+      </button>
+    </div>
+  </nav>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading trades...</p>
+  </div>
+
+  <!-- Error Banner -->
+  <div class="error-banner" *ngIf="error && !isLoading">
+    <div class="error-banner-content">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <span>{{ error }}</span>
+    </div>
+    <button *ngIf="error.includes('Zerodha') || error.includes('auth') || !isZerodhaLoggedIn" class="error-relogin-btn" (click)="loginZerodha()">
+      Re-login with Zerodha
+    </button>
+  </div>
+
+  <!-- Page Content -->
+  <main class="page-content">
+
+    <!-- ========== CALENDAR PAGE ========== -->
+    <div class="page" *ngIf="activePage === 'calendar'">
+      <div *ngIf="dailyStats" class="page-inner">
+        <app-calendar
+          [stats]="dailyStats"
+          (daySelected)="onDaySelected($event)">
+        </app-calendar>
+      </div>
+
+      <div *ngIf="!dailyStats" class="empty-state-card">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <h3>No Trade Data Loaded</h3>
+        <p>Connect to Zerodha or upload a tradebook file to see your P&L calendar.</p>
+        <button class="cta-btn" (click)="navigateTo('data-sources')">Go to Data Sources</button>
+      </div>
+    </div>
+
+    <!-- ========== DASHBOARD PAGE ========== -->
+    <div class="page" *ngIf="activePage === 'dashboard'">
+      <div *ngIf="dailyStats" class="page-inner">
+        <app-dashboard
+          [stats]="dailyStats"
+          [selectedDate]="selectedDashboardDate">
+        </app-dashboard>
+      </div>
+
+      <div *ngIf="!dailyStats" class="empty-state-card">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+        <h3>No Trade Data Loaded</h3>
+        <p>Load your trading data first to view options analytics and KPIs.</p>
+        <button class="cta-btn" (click)="navigateTo('data-sources')">Go to Data Sources</button>
+      </div>
+    </div>
+
+    <!-- ========== DATA SOURCES PAGE ========== -->
+    <div class="page" *ngIf="activePage === 'data-sources'">
+      <div class="page-inner data-sources-page">
+        <div class="page-heading">
+          <h2>Data Sources</h2>
+          <p>Connect to Zerodha for live trades, upload a tradebook file, or query historical trades.</p>
+        </div>
+
+        <div class="ds-grid">
+
+          <!-- Zerodha Connection Card -->
+          <div class="ds-card">
+            <div class="ds-card-icon zerodha-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <h3>Zerodha Live</h3>
+            <p class="ds-card-desc">Connect to your Zerodha account for live trade updates via KiteTicker WebSocket.</p>
+
+            <div *ngIf="!isZerodhaLoggedIn">
+              <button class="ds-action-btn zerodha-login-btn" (click)="loginZerodha()">
+                Connect to Zerodha
+              </button>
+            </div>
+
+            <div *ngIf="isZerodhaLoggedIn" class="ds-connected-state">
+              <div class="ds-status-badge live">
+                <span class="conn-dot live"></span>
+                Connected
+              </div>
+              <button class="ds-action-btn ds-secondary-btn" (click)="fetchTrades()">
+                Refresh Today's Trades
+              </button>
+            </div>
+          </div>
+
+          <!-- File Upload Card -->
+          <div class="ds-card">
+            <div class="ds-card-icon upload-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            </div>
+            <h3>Upload Tradebook</h3>
+            <p class="ds-card-desc">Upload a Zerodha or Groww F&O tradebook Excel file for offline analysis.</p>
+            <app-file-uploader (fileLoaded)="onFileLoaded($event)"></app-file-uploader>
+          </div>
+
+          <!-- Period Query Card -->
+          <div class="ds-card" [class.ds-card-disabled]="!isZerodhaLoggedIn">
+            <div class="ds-card-icon period-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+            <h3>Query Historical Trades</h3>
+            <p class="ds-card-desc">
+              Fetch and persist trades from a specific date range via Zerodha API.
+              <span *ngIf="!isZerodhaLoggedIn" class="ds-requires-login">Requires Zerodha connection.</span>
+            </p>
+
+            <div class="period-controls" *ngIf="isZerodhaLoggedIn">
+              <div class="period-field">
+                <label for="ds-start-date">From</label>
+                <input type="date" id="ds-start-date" [(ngModel)]="startDate" class="period-input">
+              </div>
+              <div class="period-field">
+                <label for="ds-end-date">To</label>
+                <input type="date" id="ds-end-date" [(ngModel)]="endDate" class="period-input">
+              </div>
+              <button class="ds-action-btn ds-fetch-btn" (click)="fetchTradesForPeriod()" [disabled]="isLoading">
+                {{ isLoading ? 'Fetching...' : 'Fetch Trades' }}
+              </button>
+            </div>
+
+            <div *ngIf="periodError" class="ds-error">{{ periodError }}</div>
+          </div>
+
+        </div>
+
+        <!-- Current data info -->
+        <div class="ds-data-info" *ngIf="dailyStats">
+          <div class="ds-info-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Data loaded: {{ dailyStats.size }} trading days
+          </div>
+          <div class="ds-info-actions">
+            <button class="ds-nav-link" (click)="navigateTo('calendar')">View Calendar →</button>
+            <button class="ds-nav-link" (click)="navigateTo('dashboard')">View Dashboard →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>

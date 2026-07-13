@@ -1,0 +1,202 @@
+<div class="dashboard-wrapper">
+
+  <!-- Header & Date Selector -->
+  <div class="dashboard-header" *ngIf="availableDates.length > 0">
+    <div class="header-title">
+      <h2>Options Trading Dashboard</h2>
+      <p class="subtitle">Analysis of F&O option trades for the selected day</p>
+    </div>
+    <div class="date-selector-wrapper">
+      <label for="dashboard-date">Select Date:</label>
+      <select id="dashboard-date" [ngModel]="activeDate" (ngModelChange)="onDateChange($event)" class="date-select">
+        <option *ngFor="let date of availableDates" [value]="date">{{ date | date:'dd MMMM yyyy' }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div *ngIf="availableDates.length === 0" class="no-options-state">
+    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="no-data-icon"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+    <p>No options trading data (CE/PE) found in the loaded dataset. Try loading a different date range from the Data Sources page.</p>
+  </div>
+
+  <div *ngIf="metrics" class="dashboard-content">
+    <!-- KPIs Grid -->
+    <div class="kpis-grid">
+      <!-- Net P&L Card -->
+      <div class="kpi-card pnl-card" [class.positive]="metrics.netPnL > 0" [class.negative]="metrics.netPnL < 0">
+        <div class="kpi-label">Net Options P&L</div>
+        <div class="kpi-value">₹{{ metrics.netPnL | number:'1.2-2' }}</div>
+        <div class="kpi-details">
+          <span>Gross: ₹{{ metrics.totalPnL | number:'1.2-2' }}</span>
+          <span class="bullet">•</span>
+          <span>Actual Charges: ₹{{ metrics.charges | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Win Rate Card -->
+      <div class="kpi-card winrate-card">
+        <div class="kpi-label">Options Win Rate</div>
+        <div class="kpi-value">{{ metrics.winRate | number:'1.1-1' }}%</div>
+        <div class="kpi-details">
+          <span>{{ metrics.winningTrades }} won</span>
+          <span class="bullet">•</span>
+          <span>{{ metrics.losingTrades }} lost</span>
+          <span class="bullet">•</span>
+          <span>{{ metrics.closedTrades }} closed</span>
+        </div>
+      </div>
+
+      <!-- Capital Deployed Card -->
+      <div class="kpi-card capital-card">
+        <div class="kpi-label">Peak Capital Used</div>
+        <div class="kpi-value">₹{{ metrics.capitalDeployed | number:'1.0-2' }}</div>
+        <div class="kpi-details">
+          <span>Max single trade capital</span>
+        </div>
+      </div>
+
+      <!-- Win/Loss Ratio Card -->
+      <div class="kpi-card ratio-card">
+        <div class="kpi-label">Max Win / Max Loss</div>
+        <div class="kpi-details-block">
+          <div class="ratio-item text-green">
+            <span class="ratio-label">Max Win:</span>
+            <span class="ratio-value">₹{{ metrics.maxWin | number:'1.0-2' }}</span>
+          </div>
+          <div class="ratio-item text-red">
+            <span class="ratio-label">Max Loss:</span>
+            <span class="ratio-value">₹{{ metrics.maxLoss | number:'1.0-2' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CE vs PE Analysis Segment -->
+    <div class="distribution-segment">
+      <h3>Call (CE) vs Put (PE) Distribution</h3>
+      <div class="segment-cards">
+        <div class="segment-card ce-segment">
+          <div class="segment-header">
+            <span class="badge badge-ce">Call Options (CE)</span>
+            <span class="count">{{ metrics.ceCount }} Trades</span>
+          </div>
+          <div class="segment-pnl" [class.text-green]="metrics.cePnL > 0" [class.text-red]="metrics.cePnL < 0">
+            ₹{{ metrics.cePnL | number:'1.2-2' }}
+          </div>
+        </div>
+
+        <div class="segment-card pe-segment">
+          <div class="segment-header">
+            <span class="badge badge-pe">Put Options (PE)</span>
+            <span class="count">{{ metrics.peCount }} Trades</span>
+          </div>
+          <div class="segment-pnl" [class.text-green]="metrics.pePnL > 0" [class.text-red]="metrics.pePnL < 0">
+            ₹{{ metrics.pePnL | number:'1.2-2' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual Distribution Bar -->
+      <div class="distribution-bar-wrapper">
+        <div class="bar-labels">
+          <span>CE ({{ metrics.ceCount }} trades)</span>
+          <span>PE ({{ metrics.peCount }} trades)</span>
+        </div>
+        <div class="distribution-bar">
+          <div class="ce-bar" [style.width.%]="metrics.totalTrades > 0 ? (metrics.ceCount / metrics.totalTrades * 100) : 50"></div>
+          <div class="pe-bar" [style.width.%]="metrics.totalTrades > 0 ? (metrics.peCount / metrics.totalTrades * 100) : 50"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option Trades Responsive Cards Stack Layout -->
+    <div class="trades-section">
+      <h3>Option Trades Details</h3>
+      <div class="trades-list">
+
+        <!-- Table Column Headers (Hidden on Mobile) -->
+        <div class="trades-list-header">
+          <div class="col-symbol">Symbol</div>
+          <div class="col-price">Qty & Price</div>
+          <div class="col-time">Execution Time</div>
+          <div class="col-capital">Capital & Charges</div>
+          <div class="col-pnl">Performance</div>
+          <div class="col-status">Status</div>
+        </div>
+
+        <!-- Individual Card Rows -->
+        <div class="trade-row-card" *ngFor="let pair of optionPairs">
+
+          <!-- Symbol & badges -->
+          <div class="col-symbol">
+            <span class="mobile-label">Symbol</span>
+            <div class="symbol-block">
+              <span class="symbol-name">{{ pair.symbol }}</span>
+              <div class="badge-row">
+                <span class="badge" [class.badge-ce]="pair.optionType === 'CE'" [class.badge-pe]="pair.optionType === 'PE'">{{ pair.optionType }}</span>
+                <span class="badge" [class.badge-long]="pair.type === 'Long'" [class.badge-short]="pair.type === 'Short'">{{ pair.type }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Qty & Price -->
+          <div class="col-price">
+            <span class="mobile-label">Qty & Price</span>
+            <div class="qty-flow">
+              <span class="qty-val">{{ pair.qty }} qty</span>
+              <span class="price-flow">
+                ₹{{ pair.entryPrice | number:'1.2-2' }}
+                <span *ngIf="!pair.isOpen">→ ₹{{ pair.exitPrice | number:'1.2-2' }}</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Execution Time -->
+          <div class="col-time">
+            <span class="mobile-label">Execution Time</span>
+            <div class="time-flow">
+              <span class="time-val"><span class="label-sub text-muted">In:</span> {{ pair.entryTime | date:'HH:mm:ss' }}</span>
+              <span class="time-val" *ngIf="!pair.isOpen"><span class="label-sub text-muted">Out:</span> {{ pair.exitTime | date:'HH:mm:ss' }}</span>
+              <span class="time-val text-muted" *ngIf="pair.isOpen"><span class="label-sub text-muted">Out:</span> -</span>
+            </div>
+          </div>
+
+          <!-- Capital, Remaining & Charges -->
+          <div class="col-capital">
+            <span class="mobile-label">Capital & Charges</span>
+            <div class="capital-flow">
+              <span class="cap-val">Used: ₹{{ pair.capitalUsed | number:'1.0-2' }}</span>
+              <span class="rem-val" *ngIf="!pair.isOpen">Rem: ₹{{ (pair.capitalUsed + pair.pnl) | number:'1.0-2' }}</span>
+              <span class="rem-val text-muted" *ngIf="pair.isOpen">Rem: -</span>
+              <span class="charges-val text-orange">Charges: ₹{{ pair.actualCharges | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <!-- P&L & Cumulative -->
+          <div class="col-pnl">
+            <span class="mobile-label">Performance</span>
+            <div class="pnl-flow">
+              <div *ngIf="!pair.isOpen" [class.text-green]="pair.pnl > 0" [class.text-red]="pair.pnl < 0">
+                <span class="pnl-val">{{ pair.pnl > 0 ? '+' : '' }}₹{{ pair.pnl | number:'1.2-2' }}</span>
+                <span class="pct-val">({{ pair.pnl > 0 ? '+' : '' }}{{ pair.pct | number:'1.2-2' }}%)</span>
+              </div>
+              <div class="pnl-val text-muted" *ngIf="pair.isOpen">Open Position</div>
+              <div class="cumulative-val">
+                Cum P/L: <span [class.text-green]="pair.cumulative > 0" [class.text-red]="pair.cumulative < 0" class="text-bold">{{ pair.cumulative > 0 ? '+' : '' }}₹{{ pair.cumulative | number:'1.0-2' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div class="col-status">
+            <span class="mobile-label">Status</span>
+            <span class="trade-status-badge" [class.status-open]="pair.isOpen" [class.status-closed]="!pair.isOpen">
+              {{ pair.isOpen ? 'Open' : 'Closed' }}
+            </span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

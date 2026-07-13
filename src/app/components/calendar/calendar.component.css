@@ -1,0 +1,276 @@
+.calendar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.empty-state {
+  text-align: center;
+  color: #a0a0a0;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.month-block {
+  background: rgba(20, 20, 25, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+}
+
+.month-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.month-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.month-summary {
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.month-summary.positive {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.month-summary.negative {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8b8b8d;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+}
+
+.day-cell {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.day-cell:not(.empty):not(.neutral-day):hover {
+  transform: translateY(-2px);
+  z-index: 10;
+}
+
+.day-cell.empty {
+  background: transparent;
+  border-color: transparent;
+}
+
+.day-cell.clickable {
+  cursor: pointer;
+}
+
+.day-cell.neutral-day {
+  opacity: 0.5;
+}
+
+/* Positive Day Styling */
+.day-cell.positive-day {
+  background: linear-gradient(145deg, rgba(34, 197, 94, 0.15), rgba(21, 128, 61, 0.05));
+  border-color: rgba(74, 222, 128, 0.3);
+}
+.day-cell.positive-day:hover {
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.2);
+  border-color: rgba(74, 222, 128, 0.6);
+}
+
+/* Negative Day Styling */
+.day-cell.negative-day {
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.15), rgba(185, 28, 28, 0.05));
+  border-color: rgba(248, 113, 113, 0.3);
+}
+.day-cell.negative-day:hover {
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
+  border-color: rgba(248, 113, 113, 0.6);
+}
+
+.date-number {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #d1d5db;
+  margin-bottom: auto;
+}
+
+.pnl-amount {
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 4px 0;
+  color: #4ade80; /* Default green */
+}
+
+.pnl-amount.is-loss {
+  color: #f87171;
+}
+
+.neutral-day .pnl-amount {
+  color: #9ca3af;
+}
+
+.trade-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.7rem;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.charges {
+  opacity: 0.7;
+  font-size: 0.65rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .day-cell {
+    padding: 4px;
+  }
+  .pnl-amount {
+    font-size: 0.9rem;
+  }
+  .trade-stats {
+    font-size: 0.6rem;
+  }
+  .date-number {
+    font-size: 0.8rem;
+  }
+}
+
+/* Minimized View Header Actions */
+.calendar-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto 20px auto;
+}
+
+.toggle-view-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-view-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Minimized View Layout */
+.minimized-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  max-width: 1200px;
+}
+
+.minimized-view .month-block {
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.minimized-view .month-header {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.minimized-view .month-header h2 {
+  font-size: 1.1rem;
+}
+
+.minimized-view .month-summary {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+}
+
+.minimized-view .weekdays {
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.minimized-view .weekday {
+  font-size: 0.6rem;
+}
+
+.minimized-view .days-grid {
+  gap: 4px;
+}
+
+.minimized-view .day-cell {
+  padding: 0;
+  border-radius: 4px;
+}
+
+/* Hide extra text in minimized view */
+.minimized-view .date-number,
+.minimized-view .trade-stats {
+  display: none;
+}
+
+.minimized-view .pnl-amount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 0.55rem; /* Very small text for the heatmap */
+  font-weight: 700;
+  margin: 0;
+  line-height: 1;
+  word-break: break-all;
+}
