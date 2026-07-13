@@ -65,8 +65,10 @@ export class AppComponent implements OnInit, OnDestroy {
     );
     this.subs.add(
       this.zerodhaService.tradeUpdate$.subscribe(trade => {
-        console.log('Real-time trade update received:', trade);
-        this.fetchTrades(true); // Fetch silently in the background
+        console.log('Real-time trade update received. Scheduling fetch in 2s...', trade);
+        setTimeout(() => {
+          this.fetchTrades(true); // Fetch silently in the background after 2s delay
+        }, 2000);
       })
     );
 
