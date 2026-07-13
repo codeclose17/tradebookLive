@@ -74,6 +74,18 @@ export class ZerodhaService {
     return this.http.get(`${this.apiUrl}/ping`);
   }
 
+  getKeepaliveStatus(): Observable<{ enabled: boolean; supported: boolean }> {
+    return this.http.get<{ enabled: boolean; supported: boolean }>(`${this.apiUrl}/keepalive/status`);
+  }
+
+  startKeepalive(): Observable<{ enabled: boolean; supported: boolean }> {
+    return this.http.post<{ enabled: boolean; supported: boolean }>(`${this.apiUrl}/keepalive/start`, {});
+  }
+
+  stopKeepalive(): Observable<{ enabled: boolean; supported: boolean }> {
+    return this.http.post<{ enabled: boolean; supported: boolean }>(`${this.apiUrl}/keepalive/stop`, {});
+  }
+
   getLoginUrl(): Observable<{ loginUrl: string }> {
     return this.http.get<{ loginUrl: string }>(`${this.apiUrl}/auth/url`);
   }

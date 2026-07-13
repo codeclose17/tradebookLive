@@ -25,6 +25,8 @@ export class AppComponent implements OnInit, OnDestroy {
   isServerConnected = false;
   isTickerConnected = false;
   isWakingUp = false;
+  isKeepaliveEnabled = false;
+  isKeepaliveSupported = false;
   activePage: 'calendar' | 'dashboard' | 'data-sources' = 'data-sources';
   selectedDashboardDate: string | null = null;
   wakingTimeout: any = null;
@@ -52,6 +54,7 @@ export class AppComponent implements OnInit, OnDestroy {
             clearTimeout(this.wakingTimeout);
             this.wakingTimeout = null;
           }
+          this.fetchKeepaliveStatus();
         }
       })
     );
@@ -191,6 +194,38 @@ export class AppComponent implements OnInit, OnDestroy {
         console.error('Error pinging backend:', err);
         // Even if the HTTP call errors or times out in the client,
         // it has reached Render and triggered the spin-up process.
+      }
+    });
+  }
+
+  fetchKeepaliveStatus() {
+    this.zerodhaService.getKeepaliveStatus().subscribe({
+      next: (res) => {
+        this.isKeepaliveEnabled = res.enabled;
+        this.isKeepaliveSupported = res.supported;
+      },
+      error: (err) => {
+        console.error('Error fetching keep-alive status:', err);
+      }
+    });
+  }
+
+  toggleKeepalive() {
+    if (!this.isKeepaliveSupported) return;
+
+    this.isLoading = true;
+    const req = this.isKeepaliveEnabled
+      ? this.zerodhaService.stopKeepalive()
+      : this.zerodhaService.startKeepalive();
+
+    req.subscribe({
+      next: (res) => {
+        this.isLoading = false;
+        this.isKeepaliveEnabled = res.enabled;
+      },
+      error: (err) => {
+        this.isLoading = false;
+        console.error('Error toggling keep-alive:', err);
       }
     });
   }

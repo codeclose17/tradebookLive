@@ -21,6 +21,14 @@
     </div>
 
     <div class="topbar-right">
+      <!-- Keepalive Control -->
+      <div class="keepalive-status" *ngIf="isServerConnected && isKeepaliveSupported" [class.active]="isKeepaliveEnabled">
+        <span class="keepalive-label">Keepalive:</span>
+        <button class="keepalive-btn" (click)="toggleKeepalive()" [title]="isKeepaliveEnabled ? 'Disable auto-ping (allow server to sleep)' : 'Enable auto-ping (keep server awake)'">
+          {{ isKeepaliveEnabled ? 'ON' : 'OFF' }}
+        </button>
+      </div>
+
       <!-- Backend Server Status -->
       <div class="server-status" [class.online]="isServerConnected" [class.offline]="!isServerConnected" [class.waking]="isWakingUp" (click)="!isServerConnected && !isWakingUp ? wakeBackend() : null" [style.cursor]="!isServerConnected && !isWakingUp ? 'pointer' : 'default'">
         <span class="status-dot"></span>

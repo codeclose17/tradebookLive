@@ -200,25 +200,68 @@ app.get('/api/ping', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
-// Self-ping workaround to prevent Render sleeping on free tier
+// Self-ping workaround to prevent Render sleeping on free tier (toglable)
+let keepAliveIntervalId = null;
+let isKeepAliveEnabled = false;
 const externalUrl = process.env.RENDER_EXTERNAL_URL;
+
 if (externalUrl) {
-  console.log(`[Keepalive] Render external URL detected: ${externalUrl}. Starting keep-alive self-pings...`);
+  console.log(`[Keepalive] Render external URL detected: ${externalUrl}. Keep-alive toggle enabled.`);
+} else {
+  console.log('[Keepalive] RENDER_EXTERNAL_URL environment variable is not set. Keep-alive toggle will be disabled.');
+}
+
+function startKeepAliveLoop() {
+  if (keepAliveIntervalId) return; // already running
+  if (!externalUrl) {
+    console.log('[Keepalive] Cannot start: RENDER_EXTERNAL_URL is not set.');
+    return;
+  }
+  
+  console.log(`[Keepalive] Starting self-ping loop for: ${externalUrl}`);
+  isKeepAliveEnabled = true;
   const https = require('https');
   const http = require('http');
-  const pingInterval = 10 * 60 * 1000; // 10 minutes
-
-  setInterval(() => {
-    const client = externalUrl.startsWith('https') ? https : http;
+  const client = externalUrl.startsWith('https') ? https : http;
+  
+  // Run first ping immediately to confirm connection
+  client.get(`${externalUrl}/api/ping`, (res) => {
+    console.log(`[Keepalive] Initial self-ping check successful: Code ${res.statusCode}`);
+  }).on('error', (err) => {
+    console.error('[Keepalive] Initial self-ping check failed:', err.message);
+  });
+  
+  keepAliveIntervalId = setInterval(() => {
     client.get(`${externalUrl}/api/ping`, (res) => {
       console.log(`[Keepalive] Self-ping check successful: Code ${res.statusCode}`);
     }).on('error', (err) => {
       console.error('[Keepalive] Self-ping check failed:', err.message);
     });
-  }, pingInterval);
-} else {
-  console.log('[Keepalive] RENDER_EXTERNAL_URL environment variable is not set. Self-pings disabled.');
+  }, 10 * 60 * 1000); // 10 minutes
 }
+
+function stopKeepAliveLoop() {
+  if (keepAliveIntervalId) {
+    clearInterval(keepAliveIntervalId);
+    keepAliveIntervalId = null;
+    console.log('[Keepalive] Self-ping loop stopped.');
+  }
+  isKeepAliveEnabled = false;
+}
+
+app.get('/api/keepalive/status', (req, res) => {
+  res.json({ enabled: isKeepAliveEnabled, supported: !!externalUrl });
+});
+
+app.post('/api/keepalive/start', (req, res) => {
+  startKeepAliveLoop();
+  res.json({ enabled: isKeepAliveEnabled, supported: !!externalUrl });
+});
+
+app.post('/api/keepalive/stop', (req, res) => {
+  stopKeepAliveLoop();
+  res.json({ enabled: isKeepAliveEnabled, supported: !!externalUrl });
+});
 
 
 
