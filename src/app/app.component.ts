@@ -180,18 +180,18 @@ export class AppComponent implements OnInit, OnDestroy {
   onFileLoaded(buffer: ArrayBuffer) {
     this.error = null;
     this.isLoading = true;
-    // Use setTimeout to let the UI show the loading state
-    setTimeout(() => {
-      try {
-        this.dailyStats = this.tradeParser.parseTradebook(buffer);
+
+    this.tradeParser.parseTradebook(buffer)
+      .then(stats => {
+        this.dailyStats = stats;
         this.isLoading = false;
         this.activePage = 'calendar';
-      } catch (e: any) {
+      })
+      .catch(e => {
         this.isLoading = false;
         this.error = e.message || 'An error occurred while parsing the file.';
         this.dailyStats = null;
-      }
-    }, 100);
+      });
   }
 
   fetchTradesForPeriod() {

@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import * as xlsx from 'xlsx';
 
 export interface RawTrade {
   symbol: string;
@@ -134,7 +133,8 @@ export class TradeParserService {
     return stats;
   }
 
-  parseTradebook(buffer: ArrayBuffer): Map<string, DailyStat> {
+  async parseTradebook(buffer: ArrayBuffer): Promise<Map<string, DailyStat>> {
+    const xlsx = await import('xlsx');
     const workbook = xlsx.read(buffer, { type: 'array' });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
