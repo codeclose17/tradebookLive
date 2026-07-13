@@ -138,13 +138,31 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   loginZerodha() {
+    // Open a blank window immediately (synchronously in user click event context)
+    // to bypass browser popup blockers
+    const loginWindow = window.open('about:blank', '_blank', 'width=800,height=600');
+    
+    if (loginWindow) {
+      loginWindow.document.write(`
+        <div style="font-family: sans-serif; text-align: center; margin-top: 100px; color: #333;">
+          <h2>Connecting to Zerodha...</h2>
+          <p>Please wait while we redirect you securely.</p>
+        </div>
+      `);
+    }
+
     this.zerodhaService.getLoginUrl().subscribe({
       next: (res) => {
-        window.open(res.loginUrl, '_blank', 'width=800,height=600');
+        if (loginWindow) {
+          loginWindow.location.href = res.loginUrl;
+        }
       },
       error: (err) => {
         console.error('Error getting login URL', err);
         this.error = 'Could not initiate Zerodha login.';
+        if (loginWindow) {
+          loginWindow.close();
+        }
       }
     });
   }
