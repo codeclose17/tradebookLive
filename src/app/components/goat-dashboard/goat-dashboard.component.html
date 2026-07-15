@@ -18,8 +18,9 @@
         </select>
       </label>
       <label class="ctl">
-        <span class="ctl-label">STARTING CAPITAL ₹</span>
-        <input class="ctl-input capital-input" type="number" [(ngModel)]="startingCapital" (change)="onCapitalChange()" min="1000" step="1000">
+        <span class="ctl-label">STARTING CAPITAL ₹ <em class="auto-tag" *ngIf="capitalIsAuto" title="Auto-detected from the first trade of the day">AUTO</em></span>
+        <input class="ctl-input capital-input" type="number" [(ngModel)]="startingCapital" (change)="onCapitalChange()" min="100" step="500">
+        <button class="auto-btn" *ngIf="!capitalIsAuto" (click)="resetCapitalAuto()" title="Back to auto: use first trade's capital">↺ AUTO</button>
       </label>
       <div class="ctl risk-chip" [attr.data-level]="riskLevel">
         <span class="chip-dot"></span> {{ riskLevel }}
@@ -42,7 +43,7 @@
       <div class="breach-icon">⛔</div>
       <div class="breach-copy">
         <div class="breach-title">HARD STOP · 10% CAPITAL STOP-LOSS BREACHED</div>
-        <div class="breach-sub">Cumulative loss ₹{{ lossSoFar | number:'1.0-0' }} of ₹{{ riskBudget | number:'1.0-0' }} budget (charges included). Trading session is OVER. Walk away — this is the trade that saves the account.</div>
+        <div class="breach-sub">Today's loss ₹{{ lossSoFar | number:'1.0-0' }} has crossed the ₹{{ riskBudget | number:'1.0-0' }} session budget (charges included). This session is OVER. Walking away now is the trade that saves the account.</div>
       </div>
       <div class="breach-icon">⛔</div>
     </div>
@@ -60,11 +61,11 @@
         <div class="risk-body">
           <div class="risk-readouts">
             <div class="readout">
-              <span class="ro-label">OVERALL NET (ALL DAYS)</span>
-              <span class="ro-value" [class.pos]="overallNet > 0" [class.neg]="overallNet < 0">₹{{ overallNet | number:'1.0-0' }}</span>
+              <span class="ro-label">SESSION NET (TODAY)</span>
+              <span class="ro-value" [class.pos]="dayNet > 0" [class.neg]="dayNet < 0">₹{{ dayNet | number:'1.0-0' }}</span>
             </div>
             <div class="readout">
-              <span class="ro-label">RISK BUDGET USED</span>
+              <span class="ro-label">SESSION RISK USED</span>
               <span class="ro-value" [class.neg]="riskUsedPct >= 50">{{ riskUsedPct | number:'1.0-0' }}%</span>
             </div>
             <div class="readout">
@@ -72,8 +73,8 @@
               <span class="ro-value">₹{{ riskRemaining | number:'1.0-0' }}</span>
             </div>
             <div class="readout">
-              <span class="ro-label">TODAY'S DAMAGE VS BUDGET</span>
-              <span class="ro-value" [class.neg]="dayRiskPct > 25">{{ dayRiskPct | number:'1.0-0' }}%</span>
+              <span class="ro-label">OVERALL NET (ALL {{ totalDays }} DAYS)</span>
+              <span class="ro-value" [class.pos]="overallNet > 0" [class.neg]="overallNet < 0">₹{{ overallNet | number:'1.0-0' }}</span>
             </div>
           </div>
 
@@ -243,7 +244,11 @@
           <table class="tape-table">
             <thead>
               <tr>
-                <th>#</th><th>SYMBOL</th><th>SIDE</th><th>QTY</th><th>IN</th><th>OUT</th><th>HOLD</th>
+                <th>#</th><th>SYMBOL</th><th>SIDE</th><th>QTY</th>
+                <th>PRICE IN → OUT</th>
+                <th>TIME IN → OUT</th>
+                <th>HOLD · GAP</th>
+                <th class="num">CAPITAL</th>
                 <th class="num">GROSS</th><th class="num">FEES</th><th class="num">NET</th><th class="num">CUM</th><th>FLAG</th>
               </tr>
             </thead>
@@ -253,9 +258,23 @@
                 <td class="sym">{{ p.symbol }}</td>
                 <td><span class="side-tag" [attr.data-ot]="p.optionType" [attr.data-side]="p.type">{{ p.optionType }} {{ p.type === 'Long' ? 'L' : 'S' }}</span></td>
                 <td class="dim">{{ p.qty }}</td>
-                <td class="mono">{{ p.entryLabel }}</td>
-                <td class="mono">{{ p.isOpen ? '—' : p.exitLabel }}</td>
-                <td class="dim">{{ p.isOpen ? 'OPEN' : formatHold(p.holdSeconds) }}</td>
+                <td class="mono">₹{{ p.entryPrice | number:'1.2-2' }} <span class="dim">→</span> {{ p.isOpen ? '—' : ('₹' + (p.exitPrice | number:'1.2-2')) }}</td>
+                <td class="mono">{{ p.entryLabel }} <span class="dim">→</span> {{ p.isOpen ? 'OPEN' : p.exitLabel }}</td>
+                <td>
+                  <div class="hold-cell">
+                    <span class="dim">{{ p.isOpen ? 'OPEN' : formatHold(p.holdSeconds) }}</span>
+                    <span class="gap-val" *ngIf="p.gapSeconds >= 0" [class.gap-impulse]="p.isImpulseGap" [title]="'Time since previous trade ended' + (p.isImpulseGap ? ' — re-entered in under a minute (impulse?)' : '')">
+                      ↺ {{ formatHold(p.gapSeconds) }}
+                    </span>
+                    <span class="gap-val dim" *ngIf="p.gapSeconds < 0">first</span>
+                  </div>
+                </td>
+                <td class="num">
+                  <div class="cap-cell">
+                    <span>{{ p.capitalUsed | number:'1.0-0' }}</span>
+                    <span class="cap-rem" [class.pos]="!p.isOpen && p.remaining > p.capitalUsed" [class.neg]="!p.isOpen && p.remaining < p.capitalUsed">{{ p.isOpen ? 'rem —' : ('rem ' + (p.remaining | number:'1.0-0')) }}</span>
+                  </div>
+                </td>
                 <td class="num" [class.pos]="p.pnl > 0" [class.neg]="p.pnl < 0">{{ p.pnl | number:'1.0-0' }}</td>
                 <td class="num warn">{{ p.charges | number:'1.0-0' }}</td>
                 <td class="num" [class.pos]="p.netPnl > 0" [class.neg]="p.netPnl < 0">{{ p.netPnl | number:'1.0-0' }}</td>

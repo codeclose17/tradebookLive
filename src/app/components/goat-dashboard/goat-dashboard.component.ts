@@ -27,10 +27,15 @@ interface GoatPair {
   netPnl: number;
   charges: number;
   capitalUsed: number;
+  remaining: number;
+  entryPrice: number;
+  exitPrice: number;
   isOpen: boolean;
   entryLabel: string;
   exitLabel: string;
   holdSeconds: number;
+  gapSeconds: number;
+  isImpulseGap: boolean;
   cumulative: number;
   isRevenge: boolean;
 }
@@ -53,8 +58,10 @@ export class GoatDashboardComponent implements OnChanges {
 
   // ---- Capital / risk configuration ----
   startingCapital = 100000;
+  capitalIsAuto = true; // auto = derived from first trade of the day; manual = user-entered
   private readonly STOP_PCT = 0.10;      // 10% of starting capital, charges included
   private readonly REVENGE_WINDOW_S = 300; // re-entry within 5 min of a losing exit
+  private readonly IMPULSE_GAP_S = 60;     // re-entry within 1 min of previous trade
 
   // ---- Day metrics ----
   pairs: GoatPair[] = [];
@@ -149,18 +156,28 @@ export class GoatDashboardComponent implements OnChanges {
   }
 
   onCapitalChange(): void {
-    if (!this.startingCapital || this.startingCapital < 1000) {
-      this.startingCapital = 1000;
+    if (!this.startingCapital || this.startingCapital < 100) {
+      this.startingCapital = 100;
     }
-    try { localStorage.setItem('goat_starting_capital', String(this.startingCapital)); } catch {}
+    this.capitalIsAuto = false;
+    try { localStorage.setItem('goat_capital_manual', String(this.startingCapital)); } catch {}
+    this.recompute();
+  }
+
+  resetCapitalAuto(): void {
+    this.capitalIsAuto = true;
+    try { localStorage.removeItem('goat_capital_manual'); } catch {}
     this.recompute();
   }
 
   private restoreCapital(): void {
     try {
-      const saved = localStorage.getItem('goat_starting_capital');
-      if (saved && !isNaN(Number(saved))) {
+      const saved = localStorage.getItem('goat_capital_manual');
+      if (saved && !isNaN(Number(saved)) && Number(saved) > 0) {
         this.startingCapital = Number(saved);
+        this.capitalIsAuto = false;
+      } else {
+        this.capitalIsAuto = true;
       }
     } catch {}
   }
@@ -261,11 +278,17 @@ export class GoatDashboardComponent implements OnChanges {
       .slice()
       .sort((a, b) => new Date(a.entryTime).getTime() - new Date(b.entryTime).getTime());
 
+    // Auto starting capital: capital deployed on the first trade of the day
+    if (this.capitalIsAuto && raw.length > 0 && raw[0].capitalUsed > 0) {
+      this.startingCapital = Math.round(raw[0].capitalUsed);
+    }
+
     let cumulative = 0;
     let grossWins = 0, grossLosses = 0;
     let winStreak = 0, lossStreak = 0;
     let holdWinTotal = 0, holdLossTotal = 0;
     let lastLosingExitMs = -1;
+    let prevTradeEndMs = -1;
     const hourMap = new Map<number, { count: number; pnl: number }>();
 
     for (const p of raw) {
@@ -275,6 +298,18 @@ export class GoatDashboardComponent implements OnChanges {
       const entryMs = new Date(p.entryTime).getTime();
       const exitMs = p.exitTime ? new Date(p.exitTime).getTime() : 0;
       const holdSeconds = p.exitTime ? Math.max(0, (exitMs - entryMs) / 1000) : 0;
+
+      // Gap since the previous trade ended (impulse-pacing signal)
+      const gapSeconds = prevTradeEndMs > 0 ? Math.max(0, (entryMs - prevTradeEndMs) / 1000) : -1;
+      const isImpulseGap = gapSeconds >= 0 && gapSeconds < this.IMPULSE_GAP_S;
+
+      const entryPrice = p.qty ? p.capitalUsed / p.qty : 0;
+      let exitPrice = 0;
+      if (p.qty && !p.isOpen) {
+        exitPrice = p.type === 'Long'
+          ? (p.pnl / p.qty) + entryPrice
+          : entryPrice - (p.pnl / p.qty);
+      }
 
       // Revenge detection: entered within window after a losing exit
       const isRevenge = lastLosingExitMs > 0 && (entryMs - lastLosingExitMs) / 1000 <= this.REVENGE_WINDOW_S && (entryMs - lastLosingExitMs) >= 0;
@@ -338,13 +373,20 @@ export class GoatDashboardComponent implements OnChanges {
         netPnl,
         charges,
         capitalUsed: p.capitalUsed,
+        remaining: p.isOpen ? 0 : p.capitalUsed + p.pnl,
+        entryPrice,
+        exitPrice,
         isOpen: p.isOpen,
         entryLabel: this.timeLabel(p.entryTime),
         exitLabel: this.timeLabel(p.exitTime),
         holdSeconds,
+        gapSeconds,
+        isImpulseGap,
         cumulative,
         isRevenge
       });
+
+      prevTradeEndMs = p.isOpen ? entryMs : exitMs;
     }
 
     this.currentLossStreak = lossStreak;
@@ -411,11 +453,12 @@ export class GoatDashboardComponent implements OnChanges {
   }
 
   private computeRisk(): void {
+    // Risk is judged per session: today's net loss (charges included) vs 10% of starting capital.
     this.riskBudget = this.startingCapital * this.STOP_PCT;
-    this.lossSoFar = Math.max(0, -this.overallNet);
+    this.lossSoFar = Math.max(0, -this.dayNet);
     this.riskUsedPct = this.riskBudget > 0 ? Math.min(150, (this.lossSoFar / this.riskBudget) * 100) : 0;
     this.riskRemaining = Math.max(0, this.riskBudget - this.lossSoFar);
-    this.dayRiskPct = this.riskBudget > 0 ? Math.max(0, -this.dayNet) / this.riskBudget * 100 : 0;
+    this.dayRiskPct = this.riskUsedPct;
 
     if (this.riskUsedPct >= 100) this.riskLevel = 'BREACH';
     else if (this.riskUsedPct >= 75) this.riskLevel = 'DANGER';
