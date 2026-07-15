@@ -130,7 +130,7 @@
           <div class="col-time">Execution Time</div>
           <div class="col-capital">Capital & Charges</div>
           <div class="col-pnl">Performance</div>
-          <div class="col-status">Status</div>
+          <div class="col-charges">Charges</div>
         </div>
 
         <!-- Individual Card Rows -->
@@ -196,12 +196,14 @@
             </div>
           </div>
 
-          <!-- Status -->
-          <div class="col-status">
-            <span class="mobile-label">Status</span>
-            <span class="trade-status-badge" [class.status-open]="pair.isOpen" [class.status-closed]="!pair.isOpen">
-              {{ pair.isOpen ? 'Open' : 'Closed' }}
-            </span>
+          <!-- Charges -->
+          <div class="col-charges">
+            <span class="mobile-label">Charges</span>
+            <div class="charges-flow">
+              <span class="charge-val text-orange">₹{{ pair.tradeCharges | number:'1.2-2' }}</span>
+              <span class="charge-pct">({{ pair.chargesPercent | number:'1.2-2' }}% of capital)</span>
+              <span class="cumul-charge">Cum: ₹{{ pair.cumulativeCharges | number:'1.2-2' }}</span>
+            </div>
           </div>
 
         </div>

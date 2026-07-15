@@ -319,7 +319,7 @@
 
 .trades-list-header {
   display: grid;
-  grid-template-columns: 2fr 1.3fr 1.3fr 1.7fr 1.7fr 0.8fr;
+  grid-template-columns: 2fr 1.3fr 1.3fr 1.7fr 1.7fr 1.2fr;
   padding: 14px 20px;
   background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -332,7 +332,7 @@
 
 .trade-row-card {
   display: grid;
-  grid-template-columns: 2fr 1.3fr 1.3fr 1.7fr 1.7fr 0.8fr;
+  grid-template-columns: 2fr 1.3fr 1.3fr 1.7fr 1.7fr 1.2fr;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   align-items: center;
@@ -448,24 +448,27 @@
   border: 1px solid rgba(248, 113, 113, 0.2);
 }
 
-/* Status Badges (renamed from status-indicator to avoid clash) */
-.trade-status-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-align: center;
+/* Charges Column */
+.charges-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.status-open {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+.charge-val {
+  font-weight: 700;
+  font-size: 0.9rem;
 }
 
-.status-closed {
-  background: rgba(255, 255, 255, 0.05);
+.charge-pct {
+  font-size: 0.7rem;
   color: #9ca3af;
+}
+
+.cumul-charge {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
 }
 
 /* Text Colors */

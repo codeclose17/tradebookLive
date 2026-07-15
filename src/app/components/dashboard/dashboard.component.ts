@@ -143,6 +143,7 @@ export class DashboardComponent implements OnChanges {
     }
 
     let runningTotal = 0;
+    let cumulativeCharges = 0;
     // Filter to option pairs and enhance with detailed values
     this.optionPairs = this.activeStat.tradePairs
       .filter(pair => this.isOption(pair.symbol))
@@ -159,6 +160,9 @@ export class DashboardComponent implements OnChanges {
         const pct = pair.capitalUsed ? (pair.pnl / pair.capitalUsed) * 100 : 0;
         const optionType = this.getOptionType(pair.symbol);
         runningTotal += pair.pnl;
+        const tradeCharges = pair.actualCharges !== undefined ? pair.actualCharges : (pair.isOpen ? 18 : 36);
+        cumulativeCharges += tradeCharges;
+        const chargesPercent = pair.capitalUsed ? (tradeCharges / pair.capitalUsed) * 100 : 0;
 
         return {
           ...pair,
@@ -168,7 +172,10 @@ export class DashboardComponent implements OnChanges {
           optionType,
           cumulative: runningTotal,
           entryTimeFormatted: this.formatTimeIST(pair.entryTime),
-          exitTimeFormatted: pair.exitTime ? this.formatTimeIST(pair.exitTime) : null
+          exitTimeFormatted: pair.exitTime ? this.formatTimeIST(pair.exitTime) : null,
+          tradeCharges,
+          cumulativeCharges,
+          chargesPercent
         };
       });
 
