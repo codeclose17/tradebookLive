@@ -132,6 +132,7 @@ export class GoatDashboardComponent implements OnChanges {
   flowCode = 'OBSERVER';
   flowLabel = 'OBSERVER';
   flowMessage = '';
+  flowMessagePoints: string[] = [];
   flowTips: string[] = [];
   flowSeverity = 0; // 0 green, 1 amber, 2 red, 3 critical
 
@@ -565,6 +566,12 @@ export class GoatDashboardComponent implements OnChanges {
       tips.push(`Your bleed hour today: ${worst.label} (₹${worst.pnl.toFixed(0)} across ${worst.count} trades). Consider sitting that hour out.`);
     }
     this.flowTips = tips.slice(0, 5);
+
+    // Coach message rendered as digestible bullet points, one sentence each
+    this.flowMessagePoints = this.flowMessage
+      .split(/(?<=[.!?])\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
   }
 
   private computeInsights(): void {

@@ -1,39 +1,30 @@
-<div class="goat-terminal" [class.threat-danger]="riskLevel === 'DANGER'" [class.threat-breach]="riskLevel === 'BREACH'">
+<div class="goat-wrapper" [class.threat-danger]="riskLevel === 'DANGER'" [class.threat-breach]="riskLevel === 'BREACH'">
 
-  <!-- ambient alarm vignette (visible only in danger/breach) -->
-  <div class="alarm-vignette"></div>
-
-  <!-- ============ TERMINAL TOP BAR ============ -->
-  <div class="goat-topbar">
-    <div class="goat-brand">
-      <span class="brand-mark">▙▟</span>
-      <span class="brand-name">GOAT TERMINAL</span>
-      <span class="brand-sub">F&O COMMAND CENTER</span>
+  <!-- ============ HEADER (matches classic dashboard) ============ -->
+  <div class="goat-header">
+    <div class="header-title">
+      <h2>GOAT Terminal</h2>
+      <p class="subtitle">Risk command, flow-state coaching and deep session analytics</p>
     </div>
-    <div class="goat-controls">
-      <label class="ctl">
-        <span class="ctl-label">SESSION</span>
-        <select class="ctl-input" [ngModel]="activeDate" (ngModelChange)="onDateChange($event)">
-          <option *ngFor="let d of availableDates" [value]="d">{{ d }}</option>
+    <div class="header-controls">
+      <div class="control-field">
+        <label for="goat-date">Session:</label>
+        <select id="goat-date" class="goat-select" [ngModel]="activeDate" (ngModelChange)="onDateChange($event)">
+          <option *ngFor="let d of availableDates" [value]="d">{{ d | date:'dd MMMM yyyy' }}</option>
         </select>
-      </label>
-      <label class="ctl">
-        <span class="ctl-label">STARTING CAPITAL ₹ <em class="auto-tag" *ngIf="capitalIsAuto" title="Auto-detected from the first trade of the day">AUTO</em></span>
-        <input class="ctl-input capital-input" type="number" [(ngModel)]="startingCapital" (change)="onCapitalChange()" min="100" step="500">
-        <button class="auto-btn" *ngIf="!capitalIsAuto" (click)="resetCapitalAuto()" title="Back to auto: use first trade's capital">↺ AUTO</button>
-      </label>
-      <div class="ctl risk-chip" [attr.data-level]="riskLevel">
-        <span class="chip-dot"></span> {{ riskLevel }}
       </div>
+      <div class="control-field">
+        <label for="goat-capital">Capital ₹:</label>
+        <input id="goat-capital" class="goat-select capital-input" type="number" [(ngModel)]="startingCapital" (change)="onCapitalChange()" min="100" step="500">
+        <span class="auto-tag" *ngIf="capitalIsAuto" title="Auto-detected from the first trade of the day">AUTO</span>
+        <button class="auto-btn" *ngIf="!capitalIsAuto" (click)="resetCapitalAuto()" title="Back to auto: use first trade's capital">↺ Auto</button>
+      </div>
+      <span class="risk-chip" [attr.data-level]="riskLevel"><span class="chip-dot"></span>{{ riskLevel }}</span>
     </div>
   </div>
 
-  <div *ngIf="availableDates.length === 0" class="goat-empty">
-    <pre class="ascii">
-  ┌─────────────────────────────────┐
-  │   NO SIGNAL · AWAITING DATA     │
-  │   LOAD TRADES FROM DATA SOURCES │
-  └─────────────────────────────────┘</pre>
+  <div *ngIf="availableDates.length === 0" class="no-data-state">
+    <p>No options trading data loaded. Load trades from the Data Sources page to power up the terminal.</p>
   </div>
 
   <ng-container *ngIf="availableDates.length > 0">
@@ -41,303 +32,338 @@
     <!-- ============ BREACH BANNER ============ -->
     <div class="breach-banner" *ngIf="riskLevel === 'BREACH'">
       <div class="breach-icon">⛔</div>
-      <div class="breach-copy">
+      <div>
         <div class="breach-title">HARD STOP · 10% CAPITAL STOP-LOSS BREACHED</div>
         <div class="breach-sub">Today's loss ₹{{ lossSoFar | number:'1.0-0' }} has crossed the ₹{{ riskBudget | number:'1.0-0' }} session budget (charges included). This session is OVER. Walking away now is the trade that saves the account.</div>
       </div>
-      <div class="breach-icon">⛔</div>
     </div>
 
-    <!-- ============ MAIN GRID ============ -->
-    <div class="goat-grid">
+    <!-- ============ LATEST TRADES (same table format) ============ -->
+    <div class="goat-section" *ngIf="recentPairs.length > 0">
+      <h3>Latest Trades <span class="section-meta">most recent first</span></h3>
+      <div class="trades-list">
+        <div class="trades-list-header">
+          <div>Symbol</div>
+          <div>Qty &amp; Price</div>
+          <div>Execution Time</div>
+          <div>Hold · Gap</div>
+          <div>Capital &amp; Charges</div>
+          <div>Performance</div>
+        </div>
 
-      <!-- ==== LATEST TRADES STRIP ==== -->
-      <section class="panel span-4 recent-panel" *ngIf="recentPairs.length > 0">
-        <header class="panel-head">
-          <span class="ph-title">Latest Trades</span>
-          <span class="ph-meta">Most recent first</span>
-        </header>
-        <div class="recent-body">
-          <div class="recent-card" *ngFor="let p of recentPairs; let i = index" [class.recent-revenge]="p.isRevenge">
-            <div class="recent-top">
-              <span class="recent-symbol">{{ p.symbol }}</span>
-              <span class="recent-latest" *ngIf="i === 0">LATEST</span>
+        <div class="trade-row-card" *ngFor="let pair of recentPairs; let i = index">
+          <div class="col-symbol">
+            <span class="mobile-label">Symbol</span>
+            <div class="symbol-block">
+              <span class="symbol-name">{{ pair.symbol }} <span class="badge badge-latest" *ngIf="i === 0">LATEST</span></span>
+              <div class="badge-row">
+                <span class="badge" [class.badge-ce]="pair.optionType === 'CE'" [class.badge-pe]="pair.optionType === 'PE'">{{ pair.optionType }}</span>
+                <span class="badge" [class.badge-long]="pair.type === 'Long'" [class.badge-short]="pair.type === 'Short'">{{ pair.type }}</span>
+              </div>
             </div>
-            <div class="recent-badges">
-              <span class="badge" [attr.data-ot]="p.optionType">{{ p.optionType }}</span>
-              <span class="badge" [attr.data-side]="p.type">{{ p.type }}</span>
-              <span class="flag-revenge" *ngIf="p.isRevenge">REV</span>
-              <span class="flag-impulse" *ngIf="!p.isRevenge && p.isImpulseGap">FAST</span>
+          </div>
+
+          <div class="col-price">
+            <span class="mobile-label">Qty &amp; Price</span>
+            <div class="qty-flow">
+              <span class="qty-val">{{ pair.qty }} qty</span>
+              <span class="price-flow">
+                ₹{{ pair.entryPrice | number:'1.2-2' }}
+                <span *ngIf="!pair.isOpen">→ ₹{{ pair.exitPrice | number:'1.2-2' }}</span>
+              </span>
             </div>
-            <div class="recent-pnl" [class.pos]="p.netPnl > 0" [class.neg]="p.netPnl < 0">
-              {{ p.isOpen ? 'Open' : ((p.netPnl > 0 ? '+' : '') + '₹' + (p.netPnl | number:'1.0-0')) }}
-              <span class="recent-pct" *ngIf="!p.isOpen">({{ p.netPct > 0 ? '+' : '' }}{{ p.netPct | number:'1.1-1' }}%)</span>
+          </div>
+
+          <div class="col-time">
+            <span class="mobile-label">Execution Time</span>
+            <div class="time-flow">
+              <span class="time-val"><span class="label-sub text-muted">In:</span> {{ pair.entryLabel }}</span>
+              <span class="time-val" *ngIf="!pair.isOpen"><span class="label-sub text-muted">Out:</span> {{ pair.exitLabel }}</span>
+              <span class="time-val text-muted" *ngIf="pair.isOpen"><span class="label-sub text-muted">Out:</span> -</span>
             </div>
-            <div class="recent-meta">
-              <span>{{ p.entryLabel }} → {{ p.isOpen ? 'open' : p.exitLabel }}</span>
-              <span>Hold {{ p.isOpen ? '—' : formatHold(p.holdSeconds) }}<ng-container *ngIf="p.gapSeconds >= 0"> · Gap {{ formatHold(p.gapSeconds) }}</ng-container></span>
+          </div>
+
+          <div class="col-holdgap">
+            <span class="mobile-label">Hold · Gap</span>
+            <div class="time-flow">
+              <span class="time-val"><span class="label-sub text-muted">Hold:</span> {{ pair.isOpen ? 'open' : formatHold(pair.holdSeconds) }}</span>
+              <span class="time-val" [class.text-orange]="pair.isImpulseGap"><span class="label-sub text-muted">Gap:</span> {{ pair.gapSeconds >= 0 ? formatHold(pair.gapSeconds) : 'first' }}</span>
+              <span class="badge badge-rev" *ngIf="pair.isRevenge" title="Entered within 5 minutes of a losing exit — revenge pattern">REV</span>
+              <span class="badge badge-fast" *ngIf="!pair.isRevenge && pair.isImpulseGap" title="Re-entered within 60 seconds of previous trade">FAST</span>
+            </div>
+          </div>
+
+          <div class="col-capital">
+            <span class="mobile-label">Capital &amp; Charges</span>
+            <div class="capital-flow">
+              <span class="cap-val">Used: ₹{{ pair.capitalUsed | number:'1.0-2' }}</span>
+              <span class="rem-val" *ngIf="!pair.isOpen">Rem: ₹{{ pair.remaining | number:'1.0-2' }}</span>
+              <span class="rem-val text-muted" *ngIf="pair.isOpen">Rem: -</span>
+              <span class="charges-val text-orange">Charges: ₹{{ pair.charges | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <div class="col-pnl">
+            <span class="mobile-label">Performance</span>
+            <div class="pnl-flow">
+              <div *ngIf="!pair.isOpen" [class.text-green]="pair.netPnl > 0" [class.text-red]="pair.netPnl < 0">
+                <span class="pnl-val">{{ pair.netPnl > 0 ? '+' : '' }}₹{{ pair.netPnl | number:'1.2-2' }}</span>
+                <span class="pct-val">({{ pair.netPct > 0 ? '+' : '' }}{{ pair.netPct | number:'1.2-2' }}%)</span>
+              </div>
+              <div class="pnl-val text-muted" *ngIf="pair.isOpen">Open Position</div>
+              <div class="cumulative-val">
+                Cum P/L: <span [class.text-green]="pair.cumulative > 0" [class.text-red]="pair.cumulative < 0" class="text-bold">{{ pair.cumulative > 0 ? '+' : '' }}₹{{ pair.cumulative | number:'1.0-2' }}</span>
+              </div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </div>
+
+    <!-- ============ RISK + FLOW ROW ============ -->
+    <div class="goat-two-col">
 
       <!-- ==== RISK COMMAND ==== -->
-      <section class="panel span-2 risk-panel" [attr.data-level]="riskLevel">
-        <header class="panel-head">
-          <span class="ph-title">Risk Command</span>
-          <span class="ph-meta">Stop: 10% of ₹{{ startingCapital | number:'1.0-0' }} = ₹{{ riskBudget | number:'1.0-0' }} · CHARGES INCLUDED</span>
-        </header>
+      <div class="goat-section risk-section" [attr.data-level]="riskLevel">
+        <h3>Risk Command <span class="section-meta">stop: 10% of ₹{{ startingCapital | number:'1.0-0' }} = ₹{{ riskBudget | number:'1.0-0' }} · charges included</span></h3>
 
-        <div class="risk-body">
-          <div class="risk-readouts">
-            <div class="readout">
-              <span class="ro-label">SESSION NET (TODAY)</span>
-              <span class="ro-value" [class.pos]="dayNet > 0" [class.neg]="dayNet < 0">₹{{ dayNet | number:'1.0-0' }}</span>
-            </div>
-            <div class="readout">
-              <span class="ro-label">SESSION RISK USED</span>
-              <span class="ro-value" [class.neg]="riskUsedPct >= 50">{{ riskUsedPct | number:'1.0-0' }}%</span>
-            </div>
-            <div class="readout">
-              <span class="ro-label">SURVIVAL BUFFER</span>
-              <span class="ro-value">₹{{ riskRemaining | number:'1.0-0' }}</span>
-            </div>
+        <div class="risk-readouts">
+          <div class="readout">
+            <span class="ro-label">Session Net</span>
+            <span class="ro-value" [class.text-green]="dayNet > 0" [class.text-red]="dayNet < 0">₹{{ dayNet | number:'1.0-0' }}</span>
           </div>
-
-          <!-- segmented threat meter -->
-          <div class="threat-meter">
-            <div class="tm-track">
-              <div class="tm-fill" [style.width.%]="riskUsedPct > 100 ? 100 : riskUsedPct" [attr.data-level]="riskLevel"></div>
-              <div class="tm-marker tm-50">50</div>
-              <div class="tm-marker tm-75">75</div>
-              <div class="tm-marker tm-100">STOP</div>
-            </div>
-            <div class="tm-caption" [attr.data-level]="riskLevel">
-              <ng-container [ngSwitch]="riskLevel">
-                <span *ngSwitchCase="'SAFE'">CAPITAL SECURE — TRADE YOUR PLAN</span>
-                <span *ngSwitchCase="'CAUTION'">CAUTION — HALFWAY TO THE LINE. TIGHTEN UP.</span>
-                <span *ngSwitchCase="'DANGER'">⚠ DANGER ZONE — QUARTER SIZE OR STOP ⚠</span>
-                <span *ngSwitchCase="'BREACH'">⛔ LINE CROSSED — NO MORE TRADES ⛔</span>
-              </ng-container>
-            </div>
+          <div class="readout">
+            <span class="ro-label">Risk Used</span>
+            <span class="ro-value" [class.text-red]="riskUsedPct >= 50">{{ riskUsedPct | number:'1.0-0' }}%</span>
           </div>
-
-          <!-- overtrade gauge -->
-          <div class="ot-gauge">
-            <div class="ot-head">
-              <span>TRADE FREQUENCY</span>
-              <span class="ot-level" [attr.data-ot]="overtradeLevel">{{ overtradeLabel }} · {{ totalTrades }} TRADES</span>
-            </div>
-            <div class="ot-track">
-              <div class="ot-fill" [style.width.%]="overtradePct" [attr.data-ot]="overtradeLevel"></div>
-            </div>
-            <div class="ot-scale"><span>0</span><span>6</span><span>10</span><span>15</span><span>20+</span></div>
+          <div class="readout">
+            <span class="ro-label">Survival Buffer</span>
+            <span class="ro-value">₹{{ riskRemaining | number:'1.0-0' }}</span>
           </div>
         </div>
-      </section>
 
-      <!-- ==== FLOW STATE COACH ==== -->
-      <section class="panel span-2 coach-panel" [attr.data-sev]="flowSeverity">
-        <header class="panel-head">
-          <span class="ph-title">Flow State</span>
-          <span class="ph-meta">BEHAVIORAL ENGINE</span>
-        </header>
-        <div class="coach-body">
-          <div class="flow-badge" [attr.data-sev]="flowSeverity">{{ flowLabel }}</div>
-          <p class="flow-message">{{ flowMessage }}</p>
-          <ul class="flow-tips">
-            <li *ngFor="let tip of flowTips"><span class="tip-caret">›</span> {{ tip }}</li>
-          </ul>
-        </div>
-      </section>
-
-      <!-- ==== EQUITY CURVE ==== -->
-      <section class="panel span-2 equity-panel">
-        <header class="panel-head">
-          <span class="ph-title">Equity Curve</span>
-          <span class="ph-meta" [class.pos]="dayNet > 0" [class.neg]="dayNet < 0">DAY NET ₹{{ dayNet | number:'1.0-0' }}</span>
-        </header>
-        <div class="equity-body">
-          <svg *ngIf="hasCurve" class="equity-svg" viewBox="0 0 600 170" preserveAspectRatio="none">
-            <line x1="0" [attr.y1]="zeroLineY" x2="600" [attr.y2]="zeroLineY" class="eq-zero"></line>
-            <polygon [attr.points]="equityArea" [class.area-up]="curveIsUp" [class.area-down]="!curveIsUp"></polygon>
-            <polyline [attr.points]="equityPoints" [class.line-up]="curveIsUp" [class.line-down]="!curveIsUp"></polyline>
-            <circle [attr.cx]="equityEndX" [attr.cy]="equityEndY" r="4" [class.dot-up]="curveIsUp" [class.dot-down]="!curveIsUp"></circle>
-          </svg>
-          <div *ngIf="!hasCurve" class="equity-nodata">INSUFFICIENT CLOSED TRADES FOR CURVE</div>
-          <div class="equity-stats">
-            <div class="eq-stat"><span class="eq-k">PEAK</span><span class="eq-v pos">+₹{{ peakEquity | number:'1.0-0' }}</span></div>
-            <div class="eq-stat"><span class="eq-k">GIVEBACK</span><span class="eq-v" [class.neg]="giveback > 0">₹{{ giveback | number:'1.0-0' }}</span></div>
-            <div class="eq-stat"><span class="eq-k">MAX DD</span><span class="eq-v neg">₹{{ maxDrawdown | number:'1.0-0' }}</span></div>
+        <div class="threat-meter">
+          <div class="tm-track">
+            <div class="tm-fill" [style.width.%]="riskUsedPct > 100 ? 100 : riskUsedPct" [attr.data-level]="riskLevel"></div>
+            <div class="tm-marker tm-50">50</div>
+            <div class="tm-marker tm-75">75</div>
+            <div class="tm-marker tm-100">STOP</div>
+          </div>
+          <div class="tm-caption" [attr.data-level]="riskLevel">
+            <ng-container [ngSwitch]="riskLevel">
+              <span *ngSwitchCase="'SAFE'">Capital secure — trade your plan</span>
+              <span *ngSwitchCase="'CAUTION'">Caution — halfway to the line. Tighten up.</span>
+              <span *ngSwitchCase="'DANGER'">⚠ Danger zone — quarter size or stop ⚠</span>
+              <span *ngSwitchCase="'BREACH'">⛔ Line crossed — no more trades ⛔</span>
+            </ng-container>
           </div>
         </div>
-      </section>
 
-      <!-- ==== SESSION VITALS ==== -->
-      <section class="panel span-2 vitals-panel">
-        <header class="panel-head">
-          <span class="ph-title">Session Vitals</span>
-          <span class="ph-meta">{{ closedTrades }} CLOSED · {{ openTrades }} OPEN</span>
-        </header>
+        <div class="ot-gauge">
+          <div class="ot-head">
+            <span>Trade frequency</span>
+            <span class="ot-level" [attr.data-ot]="overtradeLevel">{{ overtradeLabel }} · {{ totalTrades }} trades</span>
+          </div>
+          <div class="ot-track">
+            <div class="ot-fill" [style.width.%]="overtradePct" [attr.data-ot]="overtradeLevel"></div>
+          </div>
+          <div class="ot-scale"><span>0</span><span>6</span><span>10</span><span>15</span><span>20+</span></div>
+        </div>
+      </div>
+
+      <!-- ==== FLOW STATE ==== -->
+      <div class="goat-section coach-section" [attr.data-sev]="flowSeverity">
+        <h3>Flow State <span class="section-meta">behavioral engine</span></h3>
+        <div class="flow-badge" [attr.data-sev]="flowSeverity">{{ flowLabel }}</div>
+        <ul class="flow-points">
+          <li *ngFor="let pt of flowMessagePoints">{{ pt }}</li>
+        </ul>
+        <ul class="flow-tips">
+          <li *ngFor="let tip of flowTips">{{ tip }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ EQUITY + VITALS ROW ============ -->
+    <div class="goat-two-col">
+
+      <div class="goat-section">
+        <h3>Equity Curve <span class="section-meta" [class.text-green]="dayNet > 0" [class.text-red]="dayNet < 0">day net ₹{{ dayNet | number:'1.0-0' }}</span></h3>
+        <svg *ngIf="hasCurve" class="equity-svg" viewBox="0 0 600 170" preserveAspectRatio="none">
+          <line x1="0" [attr.y1]="zeroLineY" x2="600" [attr.y2]="zeroLineY" class="eq-zero"></line>
+          <polygon [attr.points]="equityArea" [class.area-up]="curveIsUp" [class.area-down]="!curveIsUp"></polygon>
+          <polyline [attr.points]="equityPoints" [class.line-up]="curveIsUp" [class.line-down]="!curveIsUp"></polyline>
+          <circle [attr.cx]="equityEndX" [attr.cy]="equityEndY" r="4" [class.dot-up]="curveIsUp" [class.dot-down]="!curveIsUp"></circle>
+        </svg>
+        <div *ngIf="!hasCurve" class="equity-nodata">Insufficient closed trades for curve</div>
+        <div class="equity-stats">
+          <div class="eq-stat"><span class="eq-k">Peak</span><span class="eq-v text-green">+₹{{ peakEquity | number:'1.0-0' }}</span></div>
+          <div class="eq-stat"><span class="eq-k">Giveback</span><span class="eq-v" [class.text-red]="giveback > 0">₹{{ giveback | number:'1.0-0' }}</span></div>
+          <div class="eq-stat"><span class="eq-k">Max DD</span><span class="eq-v text-red">₹{{ maxDrawdown | number:'1.0-0' }}</span></div>
+        </div>
+      </div>
+
+      <div class="goat-section">
+        <h3>Session Vitals <span class="section-meta">{{ closedTrades }} closed · {{ openTrades }} open</span></h3>
         <div class="vitals-grid">
-          <div class="vital"><span class="v-k">NET P&L</span><span class="v-v" [class.pos]="dayNet > 0" [class.neg]="dayNet < 0">₹{{ dayNet | number:'1.0-0' }}</span></div>
-          <div class="vital"><span class="v-k">GROSS</span><span class="v-v" [class.pos]="dayGross > 0" [class.neg]="dayGross < 0">₹{{ dayGross | number:'1.0-0' }}</span></div>
-          <div class="vital"><span class="v-k">CHARGES</span><span class="v-v warn">₹{{ dayCharges | number:'1.0-0' }}</span></div>
-          <div class="vital"><span class="v-k">WIN RATE</span><span class="v-v" [class.pos]="winRate >= 50" [class.neg]="winRate < 40">{{ winRate | number:'1.0-0' }}%</span></div>
-          <div class="vital"><span class="v-k">PROFIT FACTOR</span><span class="v-v" [class.pos]="profitFactor >= 1.5" [class.neg]="profitFactor < 1">{{ profitFactor | number:'1.2-2' }}</span></div>
-          <div class="vital"><span class="v-k">EXPECTANCY / TRADE</span><span class="v-v" [class.pos]="expectancy > 0" [class.neg]="expectancy < 0">₹{{ expectancy | number:'1.0-0' }}</span></div>
-          <div class="vital"><span class="v-k">AVG WIN</span><span class="v-v pos">₹{{ avgWin | number:'1.0-0' }}</span></div>
-          <div class="vital"><span class="v-k">AVG LOSS</span><span class="v-v neg">₹{{ avgLoss | number:'1.0-0' }}</span></div>
-          <div class="vital"><span class="v-k">LOSS STREAK (NOW)</span><span class="v-v" [class.neg]="currentLossStreak >= 2">{{ currentLossStreak }}</span></div>
-          <div class="vital"><span class="v-k">WORST STREAK</span><span class="v-v">{{ maxLossStreak }}L / {{ maxWinStreak }}W</span></div>
-          <div class="vital"><span class="v-k">HOLD · WINNERS</span><span class="v-v">{{ formatHold(avgHoldWin) }}</span></div>
-          <div class="vital"><span class="v-k">HOLD · LOSERS</span><span class="v-v">{{ formatHold(avgHoldLoss) }}</span></div>
+          <div class="vital"><span class="v-k">Net P&L</span><span class="v-v" [class.text-green]="dayNet > 0" [class.text-red]="dayNet < 0">₹{{ dayNet | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">Gross</span><span class="v-v" [class.text-green]="dayGross > 0" [class.text-red]="dayGross < 0">₹{{ dayGross | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">Charges</span><span class="v-v text-orange">₹{{ dayCharges | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">Win Rate</span><span class="v-v" [class.text-green]="winRate >= 50" [class.text-red]="winRate < 40">{{ winRate | number:'1.0-0' }}%</span></div>
+          <div class="vital"><span class="v-k">Profit Factor</span><span class="v-v" [class.text-green]="profitFactor >= 1.5" [class.text-red]="profitFactor < 1">{{ profitFactor | number:'1.2-2' }}</span></div>
+          <div class="vital"><span class="v-k">Expectancy</span><span class="v-v" [class.text-green]="expectancy > 0" [class.text-red]="expectancy < 0">₹{{ expectancy | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">Avg Win</span><span class="v-v text-green">₹{{ avgWin | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">Avg Loss</span><span class="v-v text-red">₹{{ avgLoss | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">Loss Streak</span><span class="v-v" [class.text-red]="currentLossStreak >= 2">{{ currentLossStreak }}</span></div>
+          <div class="vital"><span class="v-k">Streaks W/L</span><span class="v-v">{{ maxWinStreak }}W / {{ maxLossStreak }}L</span></div>
+          <div class="vital"><span class="v-k">Hold · Winners</span><span class="v-v">{{ formatHold(avgHoldWin) }}</span></div>
+          <div class="vital"><span class="v-k">Hold · Losers</span><span class="v-v">{{ formatHold(avgHoldLoss) }}</span></div>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <!-- ==== HOURLY RADAR ==== -->
-      <section class="panel hours-panel">
-        <header class="panel-head">
-          <span class="ph-title">Hourly Radar</span>
-          <span class="ph-meta">ENTRIES / HR</span>
-        </header>
+    <!-- ============ HOURLY + SPLIT ROW ============ -->
+    <div class="goat-two-col">
+      <div class="goat-section">
+        <h3>Hourly Radar <span class="section-meta">entries / hr</span></h3>
         <div class="hours-body">
           <div class="hour-col" *ngFor="let b of hourBuckets" [class.hr-best]="b.isBest" [class.hr-worst]="b.isWorst">
-            <span class="hr-pnl" [class.pos]="b.pnl > 0" [class.neg]="b.pnl < 0">{{ b.pnl !== 0 ? (b.pnl | number:'1.0-0') : '·' }}</span>
+            <span class="hr-pnl" [class.text-green]="b.pnl > 0" [class.text-red]="b.pnl < 0">{{ b.pnl !== 0 ? (b.pnl | number:'1.0-0') : '·' }}</span>
             <div class="hr-bar-wrap"><div class="hr-bar" [style.height.%]="b.barPct"></div></div>
             <span class="hr-label">{{ b.label }}</span>
             <span class="hr-count">{{ b.count }}</span>
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- ==== EXPOSURE SPLIT ==== -->
-      <section class="panel split-panel">
-        <header class="panel-head">
-          <span class="ph-title">Exposure Split</span>
-        </header>
+      <div class="goat-section">
+        <h3>Exposure Split</h3>
         <div class="split-body">
           <div class="split-row">
-            <span class="sp-k ce">CE × {{ ceCount }}</span>
-            <span class="sp-v" [class.pos]="cePnl > 0" [class.neg]="cePnl < 0">₹{{ cePnl | number:'1.0-0' }}</span>
+            <span class="badge badge-ce">CE × {{ ceCount }}</span>
+            <span class="sp-v" [class.text-green]="cePnl > 0" [class.text-red]="cePnl < 0">₹{{ cePnl | number:'1.0-0' }}</span>
           </div>
           <div class="split-row">
-            <span class="sp-k pe">PE × {{ peCount }}</span>
-            <span class="sp-v" [class.pos]="pePnl > 0" [class.neg]="pePnl < 0">₹{{ pePnl | number:'1.0-0' }}</span>
-          </div>
-          <div class="split-divider"></div>
-          <div class="split-row">
-            <span class="sp-k long">LONG × {{ longCount }}</span>
-            <span class="sp-v" [class.pos]="longPnl > 0" [class.neg]="longPnl < 0">₹{{ longPnl | number:'1.0-0' }}</span>
-          </div>
-          <div class="split-row">
-            <span class="sp-k short">SHORT × {{ shortCount }}</span>
-            <span class="sp-v" [class.pos]="shortPnl > 0" [class.neg]="shortPnl < 0">₹{{ shortPnl | number:'1.0-0' }}</span>
+            <span class="badge badge-pe">PE × {{ peCount }}</span>
+            <span class="sp-v" [class.text-green]="pePnl > 0" [class.text-red]="pePnl < 0">₹{{ pePnl | number:'1.0-0' }}</span>
           </div>
           <div class="split-divider"></div>
           <div class="split-row">
-            <span class="sp-k">DAYS G/R</span>
-            <span class="sp-v"><span class="pos">{{ greenDays }}</span> / <span class="neg">{{ redDays }}</span> of {{ totalDays }}</span>
+            <span class="badge badge-long">Long × {{ longCount }}</span>
+            <span class="sp-v" [class.text-green]="longPnl > 0" [class.text-red]="longPnl < 0">₹{{ longPnl | number:'1.0-0' }}</span>
           </div>
           <div class="split-row">
-            <span class="sp-k">PEAK CAPITAL</span>
+            <span class="badge badge-short">Short × {{ shortCount }}</span>
+            <span class="sp-v" [class.text-green]="shortPnl > 0" [class.text-red]="shortPnl < 0">₹{{ shortPnl | number:'1.0-0' }}</span>
+          </div>
+          <div class="split-divider"></div>
+          <div class="split-row">
+            <span class="sp-k">Days G/R</span>
+            <span class="sp-v"><span class="text-green">{{ greenDays }}</span> / <span class="text-red">{{ redDays }}</span> of {{ totalDays }}</span>
+          </div>
+          <div class="split-row">
+            <span class="sp-k">Peak Capital</span>
             <span class="sp-v">₹{{ peakCapital | number:'1.0-0' }}</span>
           </div>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <!-- ==== INTELLIGENCE FEED ==== -->
-      <section class="panel span-2 intel-panel">
-        <header class="panel-head">
-          <span class="ph-title">Intelligence</span>
-          <span class="ph-meta">{{ insights.length }} SIGNALS</span>
-        </header>
-        <div class="intel-body">
-          <div class="intel-row" *ngFor="let ins of insights" [attr.data-tone]="ins.tone">
-            <span class="intel-tag">{{ ins.tag }}</span>
-            <span class="intel-text">{{ ins.text }}</span>
-          </div>
+    <!-- ============ INTELLIGENCE ============ -->
+    <div class="goat-section">
+      <h3>Intelligence <span class="section-meta">{{ insights.length }} signals</span></h3>
+      <div class="intel-body">
+        <div class="intel-row" *ngFor="let ins of insights" [attr.data-tone]="ins.tone">
+          <span class="intel-tag">{{ ins.tag }}</span>
+          <span class="intel-text">{{ ins.text }}</span>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <!-- ==== TRADE TAPE ==== -->
-      <section class="panel span-4 tape-panel">
-        <header class="panel-head">
-          <span class="ph-title">Trade Tape</span>
-          <span class="ph-meta">Chronological · Net = P&L − charges</span>
-        </header>
-        <div class="tape-list">
+    <!-- ============ TRADE TAPE (classic structure + Hold·Gap column) ============ -->
+    <div class="goat-section">
+      <h3>Trade Tape <span class="section-meta">chronological · net = P&L − charges</span></h3>
+      <div class="trades-list">
 
-          <!-- Column headers -->
-          <div class="tape-header">
-            <div>Symbol</div>
-            <div>Qty &amp; Price</div>
-            <div>Execution Time</div>
-            <div>Hold · Gap</div>
-            <div>Capital &amp; Charges</div>
-            <div>Performance</div>
-            <div>Flag</div>
-          </div>
+        <div class="trades-list-header">
+          <div>Symbol</div>
+          <div>Qty &amp; Price</div>
+          <div>Execution Time</div>
+          <div>Hold · Gap</div>
+          <div>Capital &amp; Charges</div>
+          <div>Performance</div>
+        </div>
 
-          <!-- Trade rows -->
-          <div class="tape-row" *ngFor="let p of pairs; let i = index" [class.row-revenge]="p.isRevenge">
+        <div class="trade-row-card" *ngFor="let pair of pairs">
 
-            <!-- Symbol & badges -->
-            <div class="cell-symbol">
-              <span class="symbol-name">{{ p.symbol }}</span>
+          <div class="col-symbol">
+            <span class="mobile-label">Symbol</span>
+            <div class="symbol-block">
+              <span class="symbol-name">{{ pair.symbol }}</span>
               <div class="badge-row">
-                <span class="badge" [attr.data-ot]="p.optionType">{{ p.optionType }}</span>
-                <span class="badge" [attr.data-side]="p.type">{{ p.type }}</span>
+                <span class="badge" [class.badge-ce]="pair.optionType === 'CE'" [class.badge-pe]="pair.optionType === 'PE'">{{ pair.optionType }}</span>
+                <span class="badge" [class.badge-long]="pair.type === 'Long'" [class.badge-short]="pair.type === 'Short'">{{ pair.type }}</span>
               </div>
             </div>
-
-            <!-- Qty & Price -->
-            <div class="cell-price">
-              <span class="qty-val">{{ p.qty }} qty</span>
-              <span class="sub-val">₹{{ p.entryPrice | number:'1.2-2' }}<span *ngIf="!p.isOpen"> → ₹{{ p.exitPrice | number:'1.2-2' }}</span></span>
-            </div>
-
-            <!-- Execution time -->
-            <div class="cell-time">
-              <span class="sub-val"><span class="k">In</span> {{ p.entryLabel }}</span>
-              <span class="sub-val"><span class="k">Out</span> {{ p.isOpen ? '—' : p.exitLabel }}</span>
-            </div>
-
-            <!-- Hold & Gap -->
-            <div class="cell-hold">
-              <span class="sub-val"><span class="k">Hold</span> {{ p.isOpen ? 'open' : formatHold(p.holdSeconds) }}</span>
-              <span class="sub-val" *ngIf="p.gapSeconds >= 0" [class.gap-impulse]="p.isImpulseGap" [title]="'Time since previous trade ended' + (p.isImpulseGap ? ' — re-entered in under a minute' : '')">
-                <span class="k">Gap</span> {{ formatHold(p.gapSeconds) }}
-              </span>
-              <span class="sub-val muted" *ngIf="p.gapSeconds < 0"><span class="k">Gap</span> first trade</span>
-            </div>
-
-            <!-- Capital & Charges -->
-            <div class="cell-capital">
-              <span class="sub-val"><span class="k">Used</span> ₹{{ p.capitalUsed | number:'1.0-0' }}</span>
-              <span class="sub-val"><span class="k">Rem</span> {{ p.isOpen ? '—' : ('₹' + (p.remaining | number:'1.0-0')) }}</span>
-              <span class="sub-val charges"><span class="k">Fees</span> ₹{{ p.charges | number:'1.2-2' }}</span>
-            </div>
-
-            <!-- Performance -->
-            <div class="cell-perf">
-              <span class="pnl-main" [class.pos]="p.netPnl > 0" [class.neg]="p.netPnl < 0">
-                {{ p.isOpen ? 'Open' : ((p.netPnl > 0 ? '+' : '') + '₹' + (p.netPnl | number:'1.0-0')) }}
-                <span class="pnl-pct" *ngIf="!p.isOpen">({{ p.netPct > 0 ? '+' : '' }}{{ p.netPct | number:'1.1-1' }}%)</span>
-              </span>
-              <span class="sub-val"><span class="k">Cum</span> <span [class.pos]="p.cumulative > 0" [class.neg]="p.cumulative < 0">{{ p.isOpen ? '—' : ((p.cumulative > 0 ? '+' : '') + '₹' + (p.cumulative | number:'1.0-0')) }}</span></span>
-            </div>
-
-            <!-- Flag -->
-            <div class="cell-flag">
-              <span *ngIf="p.isRevenge" class="flag-revenge" title="Entered within 5 minutes of a losing exit — revenge pattern">REV</span>
-              <span *ngIf="!p.isRevenge && p.isImpulseGap" class="flag-impulse" title="Re-entered within 60 seconds of previous trade">FAST</span>
-            </div>
-
           </div>
-        </div>
-      </section>
 
+          <div class="col-price">
+            <span class="mobile-label">Qty &amp; Price</span>
+            <div class="qty-flow">
+              <span class="qty-val">{{ pair.qty }} qty</span>
+              <span class="price-flow">
+                ₹{{ pair.entryPrice | number:'1.2-2' }}
+                <span *ngIf="!pair.isOpen">→ ₹{{ pair.exitPrice | number:'1.2-2' }}</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="col-time">
+            <span class="mobile-label">Execution Time</span>
+            <div class="time-flow">
+              <span class="time-val"><span class="label-sub text-muted">In:</span> {{ pair.entryLabel }}</span>
+              <span class="time-val" *ngIf="!pair.isOpen"><span class="label-sub text-muted">Out:</span> {{ pair.exitLabel }}</span>
+              <span class="time-val text-muted" *ngIf="pair.isOpen"><span class="label-sub text-muted">Out:</span> -</span>
+            </div>
+          </div>
+
+          <div class="col-holdgap">
+            <span class="mobile-label">Hold · Gap</span>
+            <div class="time-flow">
+              <span class="time-val"><span class="label-sub text-muted">Hold:</span> {{ pair.isOpen ? 'open' : formatHold(pair.holdSeconds) }}</span>
+              <span class="time-val" [class.text-orange]="pair.isImpulseGap"><span class="label-sub text-muted">Gap:</span> {{ pair.gapSeconds >= 0 ? formatHold(pair.gapSeconds) : 'first' }}</span>
+              <span class="badge badge-rev" *ngIf="pair.isRevenge" title="Entered within 5 minutes of a losing exit — revenge pattern">REV</span>
+              <span class="badge badge-fast" *ngIf="!pair.isRevenge && pair.isImpulseGap" title="Re-entered within 60 seconds of previous trade">FAST</span>
+            </div>
+          </div>
+
+          <div class="col-capital">
+            <span class="mobile-label">Capital &amp; Charges</span>
+            <div class="capital-flow">
+              <span class="cap-val">Used: ₹{{ pair.capitalUsed | number:'1.0-2' }}</span>
+              <span class="rem-val" *ngIf="!pair.isOpen">Rem: ₹{{ pair.remaining | number:'1.0-2' }}</span>
+              <span class="rem-val text-muted" *ngIf="pair.isOpen">Rem: -</span>
+              <span class="charges-val text-orange">Charges: ₹{{ pair.charges | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <div class="col-pnl">
+            <span class="mobile-label">Performance</span>
+            <div class="pnl-flow">
+              <div *ngIf="!pair.isOpen" [class.text-green]="pair.netPnl > 0" [class.text-red]="pair.netPnl < 0">
+                <span class="pnl-val">{{ pair.netPnl > 0 ? '+' : '' }}₹{{ pair.netPnl | number:'1.2-2' }}</span>
+                <span class="pct-val">({{ pair.netPct > 0 ? '+' : '' }}{{ pair.netPct | number:'1.2-2' }}%)</span>
+              </div>
+              <div class="pnl-val text-muted" *ngIf="pair.isOpen">Open Position</div>
+              <div class="cumulative-val">
+                Cum P/L: <span [class.text-green]="pair.cumulative > 0" [class.text-red]="pair.cumulative < 0" class="text-bold">{{ pair.cumulative > 0 ? '+' : '' }}₹{{ pair.cumulative | number:'1.0-2' }}</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
+
   </ng-container>
 </div>
