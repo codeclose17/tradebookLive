@@ -25,6 +25,7 @@ interface GoatPair {
   qty: number;
   pnl: number;
   netPnl: number;
+  netPct: number;
   charges: number;
   capitalUsed: number;
   remaining: number;
@@ -371,6 +372,7 @@ export class GoatDashboardComponent implements OnChanges {
         qty: p.qty,
         pnl: p.pnl,
         netPnl,
+        netPct: p.capitalUsed ? (netPnl / p.capitalUsed) * 100 : 0,
         charges,
         capitalUsed: p.capitalUsed,
         remaining: p.isOpen ? 0 : p.capitalUsed + p.pnl,
