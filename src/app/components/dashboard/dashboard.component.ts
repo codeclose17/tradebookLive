@@ -160,7 +160,7 @@ export class DashboardComponent implements OnChanges {
         const pct = pair.capitalUsed ? (pair.pnl / pair.capitalUsed) * 100 : 0;
         const optionType = this.getOptionType(pair.symbol);
         runningTotal += pair.pnl;
-        const tradeCharges = pair.actualCharges !== undefined ? pair.actualCharges : (pair.isOpen ? 18 : 36);
+        const tradeCharges = (pair as any).actualCharges !== undefined ? (pair as any).actualCharges : (pair.isOpen ? 18 : 36);
         cumulativeCharges += tradeCharges;
         const chargesPercent = pair.capitalUsed ? (tradeCharges / pair.capitalUsed) * 100 : 0;
 
