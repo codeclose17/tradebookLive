@@ -46,7 +46,17 @@
   font-size: 0.9rem;
 }
 
-.header-controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
 .control-field { display: flex; align-items: center; gap: 8px; }
 .control-field label { color: #9ca3af; font-size: 0.9rem; font-weight: 500; }
 
@@ -411,7 +421,7 @@ circle.dot-down { fill: #f87171; }
 
 .trades-list-header {
   display: grid;
-  grid-template-columns: 2fr 1.3fr 1.3fr 1.3fr 1.7fr 1.7fr;
+  grid-template-columns: 1.8fr 1.1fr 1.1fr 1.2fr 1.5fr 1.4fr 1.1fr;
   padding: 14px 20px;
   background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -424,7 +434,7 @@ circle.dot-down { fill: #f87171; }
 
 .trade-row-card {
   display: grid;
-  grid-template-columns: 2fr 1.3fr 1.3fr 1.3fr 1.7fr 1.7fr;
+  grid-template-columns: 1.8fr 1.1fr 1.1fr 1.2fr 1.5fr 1.4fr 1.1fr;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   align-items: center;
@@ -439,7 +449,12 @@ circle.dot-down { fill: #f87171; }
 .symbol-name { font-weight: 600; color: #ffffff; }
 .badge-row { display: flex; gap: 6px; flex-wrap: wrap; }
 
-.qty-flow, .time-flow, .capital-flow, .pnl-flow { display: flex; flex-direction: column; gap: 2px; }
+.qty-flow, .time-flow, .capital-flow, .pnl-flow, .charges-flow { display: flex; flex-direction: column; gap: 2px; }
+
+/* Charges column (matches classic dashboard charges styling) */
+.charge-val { font-weight: 700; font-size: 0.9rem; }
+.charge-pct { font-size: 0.7rem; color: #9ca3af; }
+.cumul-charge { font-size: 0.75rem; color: #6b7280; font-weight: 500; }
 
 .qty-val { font-weight: 600; color: #e5e7eb; }
 .price-flow, .charges-val, .pct-val, .label-sub { font-size: 0.75rem; color: #9ca3af; }
@@ -467,7 +482,6 @@ circle.dot-down { fill: #f87171; }
 /* GOAT-specific badges in the same visual family */
 .badge-rev { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); align-self: flex-start; margin-top: 3px; font-size: 0.65rem; }
 .badge-fast { background: rgba(251, 146, 60, 0.12); color: #fdba74; border: 1px solid rgba(251, 146, 60, 0.3); align-self: flex-start; margin-top: 3px; font-size: 0.65rem; }
-.badge-latest { background: rgba(167, 119, 227, 0.15); color: #c4b5fd; border: 1px solid rgba(167, 119, 227, 0.35); font-size: 0.62rem; margin-left: 6px; vertical-align: middle; }
 
 /* Text colors (exact copy) */
 .text-green { color: #4ade80 !important; }
@@ -520,7 +534,7 @@ circle.dot-down { fill: #f87171; }
     letter-spacing: 0.05em;
   }
 
-  .qty-flow, .time-flow, .capital-flow, .pnl-flow { align-items: flex-end; text-align: right; }
+  .qty-flow, .time-flow, .capital-flow, .pnl-flow, .charges-flow { align-items: flex-end; text-align: right; }
 
   .header-controls { width: 100%; justify-content: space-between; }
   .risk-readouts { grid-template-columns: 1fr; }

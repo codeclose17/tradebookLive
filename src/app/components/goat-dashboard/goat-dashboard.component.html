@@ -6,21 +6,7 @@
       <h2>GOAT Terminal</h2>
       <p class="subtitle">Risk command, flow-state coaching and deep session analytics</p>
     </div>
-    <div class="header-controls">
-      <div class="control-field">
-        <label for="goat-date">Session:</label>
-        <select id="goat-date" class="goat-select" [ngModel]="activeDate" (ngModelChange)="onDateChange($event)">
-          <option *ngFor="let d of availableDates" [value]="d">{{ d | date:'dd MMMM yyyy' }}</option>
-        </select>
-      </div>
-      <div class="control-field">
-        <label for="goat-capital">Capital ₹:</label>
-        <input id="goat-capital" class="goat-select capital-input" type="number" [(ngModel)]="startingCapital" (change)="onCapitalChange()" min="100" step="500">
-        <span class="auto-tag" *ngIf="capitalIsAuto" title="Auto-detected from the first trade of the day">AUTO</span>
-        <button class="auto-btn" *ngIf="!capitalIsAuto" (click)="resetCapitalAuto()" title="Back to auto: use first trade's capital">↺ Auto</button>
-      </div>
-      <span class="risk-chip" [attr.data-level]="riskLevel"><span class="chip-dot"></span>{{ riskLevel }}</span>
-    </div>
+    <span class="risk-chip" [attr.data-level]="riskLevel"><span class="chip-dot"></span>{{ riskLevel }}</span>
   </div>
 
   <div *ngIf="availableDates.length === 0" class="no-data-state">
@@ -39,83 +25,37 @@
     </div>
 
     <!-- ============ LATEST TRADES (same table format) ============ -->
-    <div class="goat-section" *ngIf="recentPairs.length > 0">
+    <div class="goat-section">
       <h3>Latest Trades <span class="section-meta">most recent first</span></h3>
+
+      <div class="header-controls">
+        <div class="control-field">
+          <label for="goat-date">Session:</label>
+          <select id="goat-date" class="goat-select" [ngModel]="activeDate" (ngModelChange)="onDateChange($event)">
+            <option *ngFor="let d of availableDates" [value]="d">{{ d | date:'dd MMMM yyyy' }}</option>
+          </select>
+        </div>
+        <div class="control-field">
+          <label for="goat-capital">Capital ₹:</label>
+          <input id="goat-capital" class="goat-select capital-input" type="number" [(ngModel)]="startingCapital" (change)="onCapitalChange()" min="100" step="500">
+          <span class="auto-tag" *ngIf="capitalIsAuto" title="Auto-detected from the first trade of the day">AUTO</span>
+          <button class="auto-btn" *ngIf="!capitalIsAuto" (click)="resetCapitalAuto()" title="Back to auto: use first trade's capital">↺ Auto</button>
+        </div>
+      </div>
+
       <div class="trades-list">
         <div class="trades-list-header">
           <div>Symbol</div>
           <div>Qty &amp; Price</div>
           <div>Execution Time</div>
-          <div>Hold · Gap</div>
-          <div>Capital &amp; Charges</div>
+          <div>Capital</div>
           <div>Performance</div>
+          <div>Charges</div>
+          <div>Hold · Gap</div>
         </div>
 
-        <div class="trade-row-card" *ngFor="let pair of recentPairs; let i = index">
-          <div class="col-symbol">
-            <span class="mobile-label">Symbol</span>
-            <div class="symbol-block">
-              <span class="symbol-name">{{ pair.symbol }} <span class="badge badge-latest" *ngIf="i === 0">LATEST</span></span>
-              <div class="badge-row">
-                <span class="badge" [class.badge-ce]="pair.optionType === 'CE'" [class.badge-pe]="pair.optionType === 'PE'">{{ pair.optionType }}</span>
-                <span class="badge" [class.badge-long]="pair.type === 'Long'" [class.badge-short]="pair.type === 'Short'">{{ pair.type }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-price">
-            <span class="mobile-label">Qty &amp; Price</span>
-            <div class="qty-flow">
-              <span class="qty-val">{{ pair.qty }} qty</span>
-              <span class="price-flow">
-                ₹{{ pair.entryPrice | number:'1.2-2' }}
-                <span *ngIf="!pair.isOpen">→ ₹{{ pair.exitPrice | number:'1.2-2' }}</span>
-              </span>
-            </div>
-          </div>
-
-          <div class="col-time">
-            <span class="mobile-label">Execution Time</span>
-            <div class="time-flow">
-              <span class="time-val"><span class="label-sub text-muted">In:</span> {{ pair.entryLabel }}</span>
-              <span class="time-val" *ngIf="!pair.isOpen"><span class="label-sub text-muted">Out:</span> {{ pair.exitLabel }}</span>
-              <span class="time-val text-muted" *ngIf="pair.isOpen"><span class="label-sub text-muted">Out:</span> -</span>
-            </div>
-          </div>
-
-          <div class="col-holdgap">
-            <span class="mobile-label">Hold · Gap</span>
-            <div class="time-flow">
-              <span class="time-val"><span class="label-sub text-muted">Hold:</span> {{ pair.isOpen ? 'open' : formatHold(pair.holdSeconds) }}</span>
-              <span class="time-val" [class.text-orange]="pair.isImpulseGap"><span class="label-sub text-muted">Gap:</span> {{ pair.gapSeconds >= 0 ? formatHold(pair.gapSeconds) : 'first' }}</span>
-              <span class="badge badge-rev" *ngIf="pair.isRevenge" title="Entered within 5 minutes of a losing exit — revenge pattern">REV</span>
-              <span class="badge badge-fast" *ngIf="!pair.isRevenge && pair.isImpulseGap" title="Re-entered within 60 seconds of previous trade">FAST</span>
-            </div>
-          </div>
-
-          <div class="col-capital">
-            <span class="mobile-label">Capital &amp; Charges</span>
-            <div class="capital-flow">
-              <span class="cap-val">Used: ₹{{ pair.capitalUsed | number:'1.0-2' }}</span>
-              <span class="rem-val" *ngIf="!pair.isOpen">Rem: ₹{{ pair.remaining | number:'1.0-2' }}</span>
-              <span class="rem-val text-muted" *ngIf="pair.isOpen">Rem: -</span>
-              <span class="charges-val text-orange">Charges: ₹{{ pair.charges | number:'1.2-2' }}</span>
-            </div>
-          </div>
-
-          <div class="col-pnl">
-            <span class="mobile-label">Performance</span>
-            <div class="pnl-flow">
-              <div *ngIf="!pair.isOpen" [class.text-green]="pair.netPnl > 0" [class.text-red]="pair.netPnl < 0">
-                <span class="pnl-val">{{ pair.netPnl > 0 ? '+' : '' }}₹{{ pair.netPnl | number:'1.2-2' }}</span>
-                <span class="pct-val">({{ pair.netPct > 0 ? '+' : '' }}{{ pair.netPct | number:'1.2-2' }}%)</span>
-              </div>
-              <div class="pnl-val text-muted" *ngIf="pair.isOpen">Open Position</div>
-              <div class="cumulative-val">
-                Cum P/L: <span [class.text-green]="pair.cumulative > 0" [class.text-red]="pair.cumulative < 0" class="text-bold">{{ pair.cumulative > 0 ? '+' : '' }}₹{{ pair.cumulative | number:'1.0-2' }}</span>
-              </div>
-            </div>
-          </div>
+        <div class="trade-row-card" *ngFor="let pair of recentPairs">
+          <ng-container *ngTemplateOutlet="tradeRowCells; context: { pair: pair }"></ng-container>
         </div>
       </div>
     </div>
@@ -289,81 +229,96 @@
           <div>Symbol</div>
           <div>Qty &amp; Price</div>
           <div>Execution Time</div>
-          <div>Hold · Gap</div>
-          <div>Capital &amp; Charges</div>
+          <div>Capital</div>
           <div>Performance</div>
+          <div>Charges</div>
+          <div>Hold · Gap</div>
         </div>
 
         <div class="trade-row-card" *ngFor="let pair of pairs">
-
-          <div class="col-symbol">
-            <span class="mobile-label">Symbol</span>
-            <div class="symbol-block">
-              <span class="symbol-name">{{ pair.symbol }}</span>
-              <div class="badge-row">
-                <span class="badge" [class.badge-ce]="pair.optionType === 'CE'" [class.badge-pe]="pair.optionType === 'PE'">{{ pair.optionType }}</span>
-                <span class="badge" [class.badge-long]="pair.type === 'Long'" [class.badge-short]="pair.type === 'Short'">{{ pair.type }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-price">
-            <span class="mobile-label">Qty &amp; Price</span>
-            <div class="qty-flow">
-              <span class="qty-val">{{ pair.qty }} qty</span>
-              <span class="price-flow">
-                ₹{{ pair.entryPrice | number:'1.2-2' }}
-                <span *ngIf="!pair.isOpen">→ ₹{{ pair.exitPrice | number:'1.2-2' }}</span>
-              </span>
-            </div>
-          </div>
-
-          <div class="col-time">
-            <span class="mobile-label">Execution Time</span>
-            <div class="time-flow">
-              <span class="time-val"><span class="label-sub text-muted">In:</span> {{ pair.entryLabel }}</span>
-              <span class="time-val" *ngIf="!pair.isOpen"><span class="label-sub text-muted">Out:</span> {{ pair.exitLabel }}</span>
-              <span class="time-val text-muted" *ngIf="pair.isOpen"><span class="label-sub text-muted">Out:</span> -</span>
-            </div>
-          </div>
-
-          <div class="col-holdgap">
-            <span class="mobile-label">Hold · Gap</span>
-            <div class="time-flow">
-              <span class="time-val"><span class="label-sub text-muted">Hold:</span> {{ pair.isOpen ? 'open' : formatHold(pair.holdSeconds) }}</span>
-              <span class="time-val" [class.text-orange]="pair.isImpulseGap"><span class="label-sub text-muted">Gap:</span> {{ pair.gapSeconds >= 0 ? formatHold(pair.gapSeconds) : 'first' }}</span>
-              <span class="badge badge-rev" *ngIf="pair.isRevenge" title="Entered within 5 minutes of a losing exit — revenge pattern">REV</span>
-              <span class="badge badge-fast" *ngIf="!pair.isRevenge && pair.isImpulseGap" title="Re-entered within 60 seconds of previous trade">FAST</span>
-            </div>
-          </div>
-
-          <div class="col-capital">
-            <span class="mobile-label">Capital &amp; Charges</span>
-            <div class="capital-flow">
-              <span class="cap-val">Used: ₹{{ pair.capitalUsed | number:'1.0-2' }}</span>
-              <span class="rem-val" *ngIf="!pair.isOpen">Rem: ₹{{ pair.remaining | number:'1.0-2' }}</span>
-              <span class="rem-val text-muted" *ngIf="pair.isOpen">Rem: -</span>
-              <span class="charges-val text-orange">Charges: ₹{{ pair.charges | number:'1.2-2' }}</span>
-            </div>
-          </div>
-
-          <div class="col-pnl">
-            <span class="mobile-label">Performance</span>
-            <div class="pnl-flow">
-              <div *ngIf="!pair.isOpen" [class.text-green]="pair.netPnl > 0" [class.text-red]="pair.netPnl < 0">
-                <span class="pnl-val">{{ pair.netPnl > 0 ? '+' : '' }}₹{{ pair.netPnl | number:'1.2-2' }}</span>
-                <span class="pct-val">({{ pair.netPct > 0 ? '+' : '' }}{{ pair.netPct | number:'1.2-2' }}%)</span>
-              </div>
-              <div class="pnl-val text-muted" *ngIf="pair.isOpen">Open Position</div>
-              <div class="cumulative-val">
-                Cum P/L: <span [class.text-green]="pair.cumulative > 0" [class.text-red]="pair.cumulative < 0" class="text-bold">{{ pair.cumulative > 0 ? '+' : '' }}₹{{ pair.cumulative | number:'1.0-2' }}</span>
-              </div>
-            </div>
-          </div>
-
+          <ng-container *ngTemplateOutlet="tradeRowCells; context: { pair: pair }"></ng-container>
         </div>
       </div>
     </div>
 
   </ng-container>
+
+  <!-- ============ SHARED TRADE ROW TEMPLATE ============ -->
+  <!-- Columns: Symbol | Qty & Price | Execution Time | Capital | Performance | Charges | Hold · Gap -->
+  <ng-template #tradeRowCells let-pair="pair">
+
+    <div class="col-symbol">
+      <span class="mobile-label">Symbol</span>
+      <div class="symbol-block">
+        <span class="symbol-name">{{ pair.symbol }}</span>
+        <div class="badge-row">
+          <span class="badge" [class.badge-ce]="pair.optionType === 'CE'" [class.badge-pe]="pair.optionType === 'PE'">{{ pair.optionType }}</span>
+          <span class="badge" [class.badge-long]="pair.type === 'Long'" [class.badge-short]="pair.type === 'Short'">{{ pair.type }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-price">
+      <span class="mobile-label">Qty &amp; Price</span>
+      <div class="qty-flow">
+        <span class="qty-val">{{ pair.qty }} qty</span>
+        <span class="price-flow">
+          ₹{{ pair.entryPrice | number:'1.2-2' }}
+          <span *ngIf="!pair.isOpen">→ ₹{{ pair.exitPrice | number:'1.2-2' }}</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="col-time">
+      <span class="mobile-label">Execution Time</span>
+      <div class="time-flow">
+        <span class="time-val"><span class="label-sub text-muted">In:</span> {{ pair.entryLabel }}</span>
+        <span class="time-val" *ngIf="!pair.isOpen"><span class="label-sub text-muted">Out:</span> {{ pair.exitLabel }}</span>
+        <span class="time-val text-muted" *ngIf="pair.isOpen"><span class="label-sub text-muted">Out:</span> -</span>
+      </div>
+    </div>
+
+    <div class="col-capital">
+      <span class="mobile-label">Capital</span>
+      <div class="capital-flow">
+        <span class="cap-val">Used: ₹{{ pair.capitalUsed | number:'1.0-2' }}</span>
+        <span class="rem-val" *ngIf="!pair.isOpen">Rem: ₹{{ pair.remaining | number:'1.0-2' }}</span>
+        <span class="rem-val text-muted" *ngIf="pair.isOpen">Rem: -</span>
+      </div>
+    </div>
+
+    <div class="col-pnl">
+      <span class="mobile-label">Performance</span>
+      <div class="pnl-flow">
+        <div *ngIf="!pair.isOpen" [class.text-green]="pair.netPnl > 0" [class.text-red]="pair.netPnl < 0">
+          <span class="pnl-val">{{ pair.netPnl > 0 ? '+' : '' }}₹{{ pair.netPnl | number:'1.2-2' }}</span>
+          <span class="pct-val">({{ pair.netPct > 0 ? '+' : '' }}{{ pair.netPct | number:'1.2-2' }}%)</span>
+        </div>
+        <div class="pnl-val text-muted" *ngIf="pair.isOpen">Open Position</div>
+        <div class="cumulative-val">
+          Cum P/L: <span [class.text-green]="pair.cumulative > 0" [class.text-red]="pair.cumulative < 0" class="text-bold">{{ pair.cumulative > 0 ? '+' : '' }}₹{{ pair.cumulative | number:'1.0-2' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-charges">
+      <span class="mobile-label">Charges</span>
+      <div class="charges-flow">
+        <span class="charge-val text-orange">₹{{ pair.charges | number:'1.2-2' }}</span>
+        <span class="charge-pct">({{ pair.chargesPct | number:'1.2-2' }}% of capital)</span>
+        <span class="cumul-charge">Cum: ₹{{ pair.cumCharges | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <div class="col-holdgap">
+      <span class="mobile-label">Hold · Gap</span>
+      <div class="time-flow">
+        <span class="time-val"><span class="label-sub text-muted">Hold:</span> {{ pair.isOpen ? 'open' : formatHold(pair.holdSeconds) }}</span>
+        <span class="time-val" [class.text-orange]="pair.isImpulseGap"><span class="label-sub text-muted">Gap:</span> {{ pair.gapSeconds >= 0 ? formatHold(pair.gapSeconds) : 'first' }}</span>
+        <span class="badge badge-rev" *ngIf="pair.isRevenge" title="Entered within 5 minutes of a losing exit — revenge pattern">REV</span>
+        <span class="badge badge-fast" *ngIf="!pair.isRevenge && pair.isImpulseGap" title="Re-entered within 60 seconds of previous trade">FAST</span>
+      </div>
+    </div>
+
+  </ng-template>
 </div>

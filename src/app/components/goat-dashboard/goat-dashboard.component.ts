@@ -27,6 +27,8 @@ interface GoatPair {
   netPnl: number;
   netPct: number;
   charges: number;
+  chargesPct: number;
+  cumCharges: number;
   capitalUsed: number;
   remaining: number;
   entryPrice: number;
@@ -287,6 +289,7 @@ export class GoatDashboardComponent implements OnChanges {
     }
 
     let cumulative = 0;
+    let cumCharges = 0;
     let grossWins = 0, grossLosses = 0;
     let winStreak = 0, lossStreak = 0;
     let holdWinTotal = 0, holdLossTotal = 0;
@@ -376,6 +379,8 @@ export class GoatDashboardComponent implements OnChanges {
         netPnl,
         netPct: p.capitalUsed ? (netPnl / p.capitalUsed) * 100 : 0,
         charges,
+        chargesPct: p.capitalUsed ? (charges / p.capitalUsed) * 100 : 0,
+        cumCharges: (cumCharges += charges),
         capitalUsed: p.capitalUsed,
         remaining: p.isOpen ? 0 : p.capitalUsed + p.pnl,
         entryPrice,
