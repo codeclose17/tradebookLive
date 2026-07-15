@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { FileUploaderComponent } from './components/file-uploader/file-uploader.component';
 import { CalendarComponent } from './components/calendar/calendar.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { GoatDashboardComponent } from './components/goat-dashboard/goat-dashboard.component';
 import { TradeParserService, DailyStat } from './services/trade-parser.service';
 import { ZerodhaService } from './services/zerodha.service';
 import { Subscription } from 'rxjs';
@@ -11,7 +12,7 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, FileUploaderComponent, CalendarComponent, DashboardComponent],
+  imports: [CommonModule, FormsModule, FileUploaderComponent, CalendarComponent, DashboardComponent, GoatDashboardComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
@@ -27,7 +28,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isWakingUp = false;
   isKeepaliveEnabled = false;
   isKeepaliveSupported = false;
-  activePage: 'calendar' | 'dashboard' | 'data-sources' = 'data-sources';
+  activePage: 'calendar' | 'dashboard' | 'goat' | 'data-sources' = 'data-sources';
   selectedDashboardDate: string | null = null;
   wakingTimeout: any = null;
 
@@ -89,7 +90,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   };
 
-  navigateTo(page: 'calendar' | 'dashboard' | 'data-sources') {
+  navigateTo(page: 'calendar' | 'dashboard' | 'goat' | 'data-sources') {
     this.activePage = page;
   }
 

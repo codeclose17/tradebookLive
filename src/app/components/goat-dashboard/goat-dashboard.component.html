@@ -1,0 +1,272 @@
+<div class="goat-terminal" [class.threat-danger]="riskLevel === 'DANGER'" [class.threat-breach]="riskLevel === 'BREACH'">
+
+  <!-- ambient alarm vignette (visible only in danger/breach) -->
+  <div class="alarm-vignette"></div>
+
+  <!-- ============ TERMINAL TOP BAR ============ -->
+  <div class="goat-topbar">
+    <div class="goat-brand">
+      <span class="brand-mark">▙▟</span>
+      <span class="brand-name">GOAT TERMINAL</span>
+      <span class="brand-sub">F&O COMMAND CENTER</span>
+    </div>
+    <div class="goat-controls">
+      <label class="ctl">
+        <span class="ctl-label">SESSION</span>
+        <select class="ctl-input" [ngModel]="activeDate" (ngModelChange)="onDateChange($event)">
+          <option *ngFor="let d of availableDates" [value]="d">{{ d }}</option>
+        </select>
+      </label>
+      <label class="ctl">
+        <span class="ctl-label">STARTING CAPITAL ₹</span>
+        <input class="ctl-input capital-input" type="number" [(ngModel)]="startingCapital" (change)="onCapitalChange()" min="1000" step="1000">
+      </label>
+      <div class="ctl risk-chip" [attr.data-level]="riskLevel">
+        <span class="chip-dot"></span> {{ riskLevel }}
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="availableDates.length === 0" class="goat-empty">
+    <pre class="ascii">
+  ┌─────────────────────────────────┐
+  │   NO SIGNAL · AWAITING DATA     │
+  │   LOAD TRADES FROM DATA SOURCES │
+  └─────────────────────────────────┘</pre>
+  </div>
+
+  <ng-container *ngIf="availableDates.length > 0">
+
+    <!-- ============ BREACH BANNER ============ -->
+    <div class="breach-banner" *ngIf="riskLevel === 'BREACH'">
+      <div class="breach-icon">⛔</div>
+      <div class="breach-copy">
+        <div class="breach-title">HARD STOP · 10% CAPITAL STOP-LOSS BREACHED</div>
+        <div class="breach-sub">Cumulative loss ₹{{ lossSoFar | number:'1.0-0' }} of ₹{{ riskBudget | number:'1.0-0' }} budget (charges included). Trading session is OVER. Walk away — this is the trade that saves the account.</div>
+      </div>
+      <div class="breach-icon">⛔</div>
+    </div>
+
+    <!-- ============ MAIN GRID ============ -->
+    <div class="goat-grid">
+
+      <!-- ==== RISK COMMAND ==== -->
+      <section class="panel span-2 risk-panel" [attr.data-level]="riskLevel">
+        <header class="panel-head">
+          <span class="ph-title">▮ RISK COMMAND</span>
+          <span class="ph-meta">STOP: 10% OF ₹{{ startingCapital | number:'1.0-0' }} = ₹{{ riskBudget | number:'1.0-0' }} · CHARGES INCLUDED</span>
+        </header>
+
+        <div class="risk-body">
+          <div class="risk-readouts">
+            <div class="readout">
+              <span class="ro-label">OVERALL NET (ALL DAYS)</span>
+              <span class="ro-value" [class.pos]="overallNet > 0" [class.neg]="overallNet < 0">₹{{ overallNet | number:'1.0-0' }}</span>
+            </div>
+            <div class="readout">
+              <span class="ro-label">RISK BUDGET USED</span>
+              <span class="ro-value" [class.neg]="riskUsedPct >= 50">{{ riskUsedPct | number:'1.0-0' }}%</span>
+            </div>
+            <div class="readout">
+              <span class="ro-label">SURVIVAL BUFFER</span>
+              <span class="ro-value">₹{{ riskRemaining | number:'1.0-0' }}</span>
+            </div>
+            <div class="readout">
+              <span class="ro-label">TODAY'S DAMAGE VS BUDGET</span>
+              <span class="ro-value" [class.neg]="dayRiskPct > 25">{{ dayRiskPct | number:'1.0-0' }}%</span>
+            </div>
+          </div>
+
+          <!-- segmented threat meter -->
+          <div class="threat-meter">
+            <div class="tm-track">
+              <div class="tm-fill" [style.width.%]="riskUsedPct > 100 ? 100 : riskUsedPct" [attr.data-level]="riskLevel"></div>
+              <div class="tm-marker tm-50">50</div>
+              <div class="tm-marker tm-75">75</div>
+              <div class="tm-marker tm-100">STOP</div>
+            </div>
+            <div class="tm-caption" [attr.data-level]="riskLevel">
+              <ng-container [ngSwitch]="riskLevel">
+                <span *ngSwitchCase="'SAFE'">CAPITAL SECURE — TRADE YOUR PLAN</span>
+                <span *ngSwitchCase="'CAUTION'">CAUTION — HALFWAY TO THE LINE. TIGHTEN UP.</span>
+                <span *ngSwitchCase="'DANGER'">⚠ DANGER ZONE — QUARTER SIZE OR STOP ⚠</span>
+                <span *ngSwitchCase="'BREACH'">⛔ LINE CROSSED — NO MORE TRADES ⛔</span>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- overtrade gauge -->
+          <div class="ot-gauge">
+            <div class="ot-head">
+              <span>TRADE FREQUENCY</span>
+              <span class="ot-level" [attr.data-ot]="overtradeLevel">{{ overtradeLabel }} · {{ totalTrades }} TRADES</span>
+            </div>
+            <div class="ot-track">
+              <div class="ot-fill" [style.width.%]="overtradePct" [attr.data-ot]="overtradeLevel"></div>
+            </div>
+            <div class="ot-scale"><span>0</span><span>6</span><span>10</span><span>15</span><span>20+</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==== FLOW STATE COACH ==== -->
+      <section class="panel span-2 coach-panel" [attr.data-sev]="flowSeverity">
+        <header class="panel-head">
+          <span class="ph-title">▮ FLOW STATE</span>
+          <span class="ph-meta">BEHAVIORAL ENGINE</span>
+        </header>
+        <div class="coach-body">
+          <div class="flow-badge" [attr.data-sev]="flowSeverity">{{ flowLabel }}</div>
+          <p class="flow-message">{{ flowMessage }}</p>
+          <ul class="flow-tips">
+            <li *ngFor="let tip of flowTips"><span class="tip-caret">›</span> {{ tip }}</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ==== EQUITY CURVE ==== -->
+      <section class="panel span-2 equity-panel">
+        <header class="panel-head">
+          <span class="ph-title">▮ EQUITY CURVE (NET OF CHARGES)</span>
+          <span class="ph-meta" [class.pos]="dayNet > 0" [class.neg]="dayNet < 0">DAY NET ₹{{ dayNet | number:'1.0-0' }}</span>
+        </header>
+        <div class="equity-body">
+          <svg *ngIf="hasCurve" class="equity-svg" viewBox="0 0 600 170" preserveAspectRatio="none">
+            <line x1="0" [attr.y1]="zeroLineY" x2="600" [attr.y2]="zeroLineY" class="eq-zero"></line>
+            <polygon [attr.points]="equityArea" [class.area-up]="curveIsUp" [class.area-down]="!curveIsUp"></polygon>
+            <polyline [attr.points]="equityPoints" [class.line-up]="curveIsUp" [class.line-down]="!curveIsUp"></polyline>
+            <circle [attr.cx]="equityEndX" [attr.cy]="equityEndY" r="4" [class.dot-up]="curveIsUp" [class.dot-down]="!curveIsUp"></circle>
+          </svg>
+          <div *ngIf="!hasCurve" class="equity-nodata">INSUFFICIENT CLOSED TRADES FOR CURVE</div>
+          <div class="equity-stats">
+            <div class="eq-stat"><span class="eq-k">PEAK</span><span class="eq-v pos">+₹{{ peakEquity | number:'1.0-0' }}</span></div>
+            <div class="eq-stat"><span class="eq-k">GIVEBACK</span><span class="eq-v" [class.neg]="giveback > 0">₹{{ giveback | number:'1.0-0' }}</span></div>
+            <div class="eq-stat"><span class="eq-k">MAX DD</span><span class="eq-v neg">₹{{ maxDrawdown | number:'1.0-0' }}</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==== SESSION VITALS ==== -->
+      <section class="panel span-2 vitals-panel">
+        <header class="panel-head">
+          <span class="ph-title">▮ SESSION VITALS</span>
+          <span class="ph-meta">{{ closedTrades }} CLOSED · {{ openTrades }} OPEN</span>
+        </header>
+        <div class="vitals-grid">
+          <div class="vital"><span class="v-k">NET P&L</span><span class="v-v" [class.pos]="dayNet > 0" [class.neg]="dayNet < 0">₹{{ dayNet | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">GROSS</span><span class="v-v" [class.pos]="dayGross > 0" [class.neg]="dayGross < 0">₹{{ dayGross | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">CHARGES</span><span class="v-v warn">₹{{ dayCharges | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">WIN RATE</span><span class="v-v" [class.pos]="winRate >= 50" [class.neg]="winRate < 40">{{ winRate | number:'1.0-0' }}%</span></div>
+          <div class="vital"><span class="v-k">PROFIT FACTOR</span><span class="v-v" [class.pos]="profitFactor >= 1.5" [class.neg]="profitFactor < 1">{{ profitFactor | number:'1.2-2' }}</span></div>
+          <div class="vital"><span class="v-k">EXPECTANCY / TRADE</span><span class="v-v" [class.pos]="expectancy > 0" [class.neg]="expectancy < 0">₹{{ expectancy | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">AVG WIN</span><span class="v-v pos">₹{{ avgWin | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">AVG LOSS</span><span class="v-v neg">₹{{ avgLoss | number:'1.0-0' }}</span></div>
+          <div class="vital"><span class="v-k">LOSS STREAK (NOW)</span><span class="v-v" [class.neg]="currentLossStreak >= 2">{{ currentLossStreak }}</span></div>
+          <div class="vital"><span class="v-k">WORST STREAK</span><span class="v-v">{{ maxLossStreak }}L / {{ maxWinStreak }}W</span></div>
+          <div class="vital"><span class="v-k">HOLD · WINNERS</span><span class="v-v">{{ formatHold(avgHoldWin) }}</span></div>
+          <div class="vital"><span class="v-k">HOLD · LOSERS</span><span class="v-v">{{ formatHold(avgHoldLoss) }}</span></div>
+        </div>
+      </section>
+
+      <!-- ==== HOURLY RADAR ==== -->
+      <section class="panel hours-panel">
+        <header class="panel-head">
+          <span class="ph-title">▮ HOURLY RADAR</span>
+          <span class="ph-meta">ENTRIES / HR</span>
+        </header>
+        <div class="hours-body">
+          <div class="hour-col" *ngFor="let b of hourBuckets" [class.hr-best]="b.isBest" [class.hr-worst]="b.isWorst">
+            <span class="hr-pnl" [class.pos]="b.pnl > 0" [class.neg]="b.pnl < 0">{{ b.pnl !== 0 ? (b.pnl | number:'1.0-0') : '·' }}</span>
+            <div class="hr-bar-wrap"><div class="hr-bar" [style.height.%]="b.barPct"></div></div>
+            <span class="hr-label">{{ b.label }}</span>
+            <span class="hr-count">{{ b.count }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==== EXPOSURE SPLIT ==== -->
+      <section class="panel split-panel">
+        <header class="panel-head">
+          <span class="ph-title">▮ EXPOSURE SPLIT</span>
+        </header>
+        <div class="split-body">
+          <div class="split-row">
+            <span class="sp-k ce">CE × {{ ceCount }}</span>
+            <span class="sp-v" [class.pos]="cePnl > 0" [class.neg]="cePnl < 0">₹{{ cePnl | number:'1.0-0' }}</span>
+          </div>
+          <div class="split-row">
+            <span class="sp-k pe">PE × {{ peCount }}</span>
+            <span class="sp-v" [class.pos]="pePnl > 0" [class.neg]="pePnl < 0">₹{{ pePnl | number:'1.0-0' }}</span>
+          </div>
+          <div class="split-divider"></div>
+          <div class="split-row">
+            <span class="sp-k long">LONG × {{ longCount }}</span>
+            <span class="sp-v" [class.pos]="longPnl > 0" [class.neg]="longPnl < 0">₹{{ longPnl | number:'1.0-0' }}</span>
+          </div>
+          <div class="split-row">
+            <span class="sp-k short">SHORT × {{ shortCount }}</span>
+            <span class="sp-v" [class.pos]="shortPnl > 0" [class.neg]="shortPnl < 0">₹{{ shortPnl | number:'1.0-0' }}</span>
+          </div>
+          <div class="split-divider"></div>
+          <div class="split-row">
+            <span class="sp-k">DAYS G/R</span>
+            <span class="sp-v"><span class="pos">{{ greenDays }}</span> / <span class="neg">{{ redDays }}</span> of {{ totalDays }}</span>
+          </div>
+          <div class="split-row">
+            <span class="sp-k">PEAK CAPITAL</span>
+            <span class="sp-v">₹{{ peakCapital | number:'1.0-0' }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==== INTELLIGENCE FEED ==== -->
+      <section class="panel span-2 intel-panel">
+        <header class="panel-head">
+          <span class="ph-title">▮ INTELLIGENCE FEED</span>
+          <span class="ph-meta">{{ insights.length }} SIGNALS</span>
+        </header>
+        <div class="intel-body">
+          <div class="intel-row" *ngFor="let ins of insights" [attr.data-tone]="ins.tone">
+            <span class="intel-tag">{{ ins.tag }}</span>
+            <span class="intel-text">{{ ins.text }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==== TRADE TAPE ==== -->
+      <section class="panel span-4 tape-panel">
+        <header class="panel-head">
+          <span class="ph-title">▮ TRADE TAPE</span>
+          <span class="ph-meta">CHRONOLOGICAL · NET = P&L − CHARGES</span>
+        </header>
+        <div class="tape-scroll">
+          <table class="tape-table">
+            <thead>
+              <tr>
+                <th>#</th><th>SYMBOL</th><th>SIDE</th><th>QTY</th><th>IN</th><th>OUT</th><th>HOLD</th>
+                <th class="num">GROSS</th><th class="num">FEES</th><th class="num">NET</th><th class="num">CUM</th><th>FLAG</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of pairs; let i = index" [class.row-revenge]="p.isRevenge">
+                <td class="dim">{{ i + 1 }}</td>
+                <td class="sym">{{ p.symbol }}</td>
+                <td><span class="side-tag" [attr.data-ot]="p.optionType" [attr.data-side]="p.type">{{ p.optionType }} {{ p.type === 'Long' ? 'L' : 'S' }}</span></td>
+                <td class="dim">{{ p.qty }}</td>
+                <td class="mono">{{ p.entryLabel }}</td>
+                <td class="mono">{{ p.isOpen ? '—' : p.exitLabel }}</td>
+                <td class="dim">{{ p.isOpen ? 'OPEN' : formatHold(p.holdSeconds) }}</td>
+                <td class="num" [class.pos]="p.pnl > 0" [class.neg]="p.pnl < 0">{{ p.pnl | number:'1.0-0' }}</td>
+                <td class="num warn">{{ p.charges | number:'1.0-0' }}</td>
+                <td class="num" [class.pos]="p.netPnl > 0" [class.neg]="p.netPnl < 0">{{ p.netPnl | number:'1.0-0' }}</td>
+                <td class="num" [class.pos]="p.cumulative > 0" [class.neg]="p.cumulative < 0">{{ p.isOpen ? '—' : (p.cumulative | number:'1.0-0') }}</td>
+                <td><span *ngIf="p.isRevenge" class="flag-revenge" title="Entered within 5 minutes of a losing exit">REV</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </ng-container>
+</div>
