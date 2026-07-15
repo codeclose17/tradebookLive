@@ -90,9 +90,15 @@
 /* KPIs Grid */
 .kpis-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5em;
   margin-bottom: 30px;
+  position: sticky;
+  top: 0;
+  background: rgba(10, 10, 12, 0.95);
+  backdrop-filter: blur(12px);
+  padding: 20px 0;
+  z-index: 10;
 }
 
 .kpi-card {
