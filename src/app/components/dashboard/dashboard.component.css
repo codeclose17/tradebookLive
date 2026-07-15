@@ -87,60 +87,59 @@
   font-size: 0.9rem;
 }
 
-/* KPIs Grid */
+/* KPIs Grid - Sticky Compact Header */
 .kpis-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 5em;
+  display: flex;
+  align-items: center;
+  height: 5em;
+  gap: 2em;
   margin-bottom: 30px;
   position: sticky;
   top: 0;
   background: rgba(10, 10, 12, 0.95);
   backdrop-filter: blur(12px);
-  padding: 20px 0;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 10;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .kpi-card {
-  background: rgba(20, 20, 25, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  justify-content: center;
+  min-width: fit-content;
+  flex-shrink: 0;
 }
 
 .kpi-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.15);
+  opacity: 0.8;
 }
 
 .kpi-label {
   color: #9ca3af;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 12px;
+  margin-bottom: 2px;
 }
 
 .kpi-value {
-  font-size: 1.8rem;
+  font-size: 1.1rem;
   font-weight: 800;
   color: #ffffff;
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .kpi-details {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: #9ca3af;
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
+  white-space: nowrap;
 }
 
 .kpi-details .bullet {
@@ -165,14 +164,16 @@
 /* Win/Loss Details Grid */
 .kpi-details-block {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  gap: 6px;
+  align-items: center;
 }
 
 .ratio-item {
   display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
+  gap: 3px;
+  font-size: 0.65rem;
+  align-items: center;
 }
 
 .ratio-label {
@@ -191,6 +192,7 @@
   padding: 24px;
   margin-bottom: 30px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: none;
 }
 
 .distribution-segment h3 {
