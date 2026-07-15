@@ -33,7 +33,7 @@
 
 .header-title h2 {
   margin: 0 0 4px 0;
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
   background: linear-gradient(135deg, #6e8efb, #a777e3);
   -webkit-background-clip: text;
@@ -43,7 +43,7 @@
 .header-title .subtitle {
   margin: 0;
   color: #9ca3af;
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .header-controls {
@@ -156,7 +156,7 @@
 
 .goat-section h3 {
   margin: 0 0 20px 0;
-  font-size: 1.1rem;
+  font-size: 1.35rem;
   font-weight: 600;
   color: #ffffff;
   display: flex;
@@ -168,7 +168,7 @@
 
 .section-meta {
   color: #9ca3af;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 500;
   text-transform: none;
 }
@@ -201,7 +201,7 @@
   gap: 6px;
 }
 .ro-label { color: #9ca3af; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.ro-value { font-size: 1.7rem; font-weight: 800; color: #ffffff; }
+.ro-value { font-size: 1.85rem; font-weight: 800; color: #ffffff; }
 
 .threat-meter { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
 .tm-track {
@@ -237,14 +237,14 @@
 .tm-75 { left: 75%; }
 .tm-100 { left: calc(100% - 40px); border-left-color: #f87171; color: #f87171; font-weight: 700; }
 
-.tm-caption { font-size: 0.8rem; font-weight: 600; }
+.tm-caption { font-size: 0.9rem; font-weight: 600; }
 .tm-caption[data-level="SAFE"] { color: #4ade80; }
 .tm-caption[data-level="CAUTION"] { color: #fbbf24; }
 .tm-caption[data-level="DANGER"] { color: #f87171; animation: soft-pulse 2s ease-in-out infinite; }
 .tm-caption[data-level="BREACH"] { color: #f87171; animation: soft-pulse 1.2s ease-in-out infinite; }
 
 .ot-gauge { display: flex; flex-direction: column; gap: 6px; }
-.ot-head { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 500; color: #9ca3af; }
+.ot-head { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 500; color: #9ca3af; }
 .ot-level[data-ot="0"] { color: #4ade80; }
 .ot-level[data-ot="1"] { color: #fbbf24; }
 .ot-level[data-ot="2"] { color: #fb923c; font-weight: 700; }
@@ -254,7 +254,7 @@
 .ot-fill[data-ot="1"] { background: #fbbf24; }
 .ot-fill[data-ot="2"] { background: #fb923c; }
 .ot-fill[data-ot="3"] { background: #ef4444; animation: fill-breathe 1.4s ease-in-out infinite; }
-.ot-scale { display: flex; justify-content: space-between; font-size: 0.62rem; color: #6b7280; }
+.ot-scale { display: flex; justify-content: space-between; font-size: 0.7rem; color: #6b7280; }
 
 /* ================= FLOW STATE ================= */
 .coach-section[data-sev="2"] { border-color: rgba(248, 113, 113, 0.35); }
@@ -264,7 +264,7 @@
   display: inline-block;
   padding: 6px 14px;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 700;
   margin-bottom: 16px;
   border: 1px solid rgba(74, 222, 128, 0.3);
@@ -283,7 +283,7 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 10px;
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   line-height: 1.55;
   color: #e5e7eb;
   font-weight: 500;
@@ -303,7 +303,7 @@
 .flow-tips li {
   position: relative;
   padding-left: 20px;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   line-height: 1.5;
   color: #9ca3af;
 }
@@ -345,8 +345,8 @@ circle.dot-down { fill: #f87171; }
 
 .equity-stats { display: flex; gap: 24px; flex-wrap: wrap; }
 .eq-stat { display: flex; gap: 8px; align-items: baseline; }
-.eq-k { color: #9ca3af; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.eq-v { font-size: 1.15rem; font-weight: 700; color: #ffffff; }
+.eq-k { color: #9ca3af; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.eq-v { font-size: 1.3rem; font-weight: 700; color: #ffffff; }
 
 /* ================= VITALS ================= */
 .vitals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -360,24 +360,24 @@ circle.dot-down { fill: #f87171; }
   gap: 4px;
 }
 .v-k { color: #9ca3af; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.v-v { font-size: 1.25rem; font-weight: 700; color: #ffffff; }
+.v-v { font-size: 1.3rem; font-weight: 700; color: #ffffff; }
 
 /* ================= HOURLY ================= */
 .hours-body { display: flex; align-items: stretch; gap: 8px; min-height: 150px; }
 .hour-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.hr-pnl { font-size: 0.62rem; font-weight: 600; min-height: 14px; color: #6b7280; }
+.hr-pnl { font-size: 0.75rem; font-weight: 600; min-height: 14px; color: #6b7280; }
 .hr-bar-wrap { flex: 1; width: 100%; max-width: 26px; display: flex; align-items: flex-end; background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
 .hr-bar { width: 100%; background: #3b82f6; border-radius: 4px; min-height: 3px; transition: height 0.4s ease; opacity: 0.85; }
 .hr-best .hr-bar { background: #4ade80; opacity: 1; }
 .hr-worst .hr-bar { background: #f87171; opacity: 1; }
-.hr-label { color: #9ca3af; font-size: 0.68rem; }
-.hr-count { color: #e5e7eb; font-size: 0.75rem; font-weight: 700; }
+.hr-label { color: #9ca3af; font-size: 0.8rem; }
+.hr-count { color: #e5e7eb; font-size: 0.85rem; font-weight: 700; }
 
 /* ================= SPLIT ================= */
 .split-body { display: flex; flex-direction: column; gap: 12px; }
 .split-row { display: flex; justify-content: space-between; align-items: center; }
-.sp-k { color: #9ca3af; font-size: 0.8rem; font-weight: 500; }
-.sp-v { font-weight: 700; color: #ffffff; font-size: 0.9rem; }
+.sp-k { color: #9ca3af; font-size: 0.9rem; font-weight: 500; }
+.sp-v { font-weight: 700; color: #ffffff; font-size: 1.05rem; }
 .split-divider { border-top: 1px dashed rgba(255, 255, 255, 0.1); }
 
 /* ================= INTEL ================= */
@@ -396,7 +396,7 @@ circle.dot-down { fill: #f87171; }
 .intel-row[data-tone="warn"] { border-left-color: #fbbf24; }
 .intel-tag {
   flex-shrink: 0;
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: #9ca3af;
@@ -407,7 +407,7 @@ circle.dot-down { fill: #f87171; }
 .intel-row[data-tone="good"] .intel-tag { color: #4ade80; }
 .intel-row[data-tone="bad"] .intel-tag { color: #f87171; }
 .intel-row[data-tone="warn"] .intel-tag { color: #fbbf24; }
-.intel-text { font-size: 0.82rem; line-height: 1.6; color: #d1d5db; }
+.intel-text { font-size: 0.95rem; line-height: 1.6; color: #d1d5db; }
 
 /* ================= TRADES TABLES (exact copy of classic dashboard) ================= */
 .trades-list {
@@ -426,7 +426,7 @@ circle.dot-down { fill: #f87171; }
   background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   color: #9ca3af;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -470,7 +470,7 @@ circle.dot-down { fill: #f87171; }
   display: inline-block;
   padding: 4px 8px;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-align: center;
 }
@@ -528,7 +528,7 @@ circle.dot-down { fill: #f87171; }
   .mobile-label {
     display: inline-block;
     color: #9ca3af;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
