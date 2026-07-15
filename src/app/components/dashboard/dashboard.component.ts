@@ -38,6 +38,7 @@ export class DashboardComponent implements OnChanges {
   activeStat: DailyStat | null = null;
   optionPairs: any[] = [];
   metrics: DashboardMetrics | null = null;
+  timeSortOrder: 'asc' | 'desc' = 'asc';
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['stats'] && this.stats) {
@@ -74,6 +75,41 @@ export class DashboardComponent implements OnChanges {
     if (s.endsWith('CE') || s.includes(' CE')) return 'CE';
     if (s.endsWith('PE') || s.includes(' PE')) return 'PE';
     return 'N/A';
+  }
+
+  toggleTimeSort(): void {
+    this.timeSortOrder = this.timeSortOrder === 'asc' ? 'desc' : 'asc';
+    this.sortTradesByTime();
+  }
+
+  private sortTradesByTime(): void {
+    if (!this.optionPairs.length) return;
+
+    this.optionPairs.sort((a, b) => {
+      const timeA = new Date(a.entryTime).getTime();
+      const timeB = new Date(b.entryTime).getTime();
+      return this.timeSortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+    });
+
+    this.recalculateCumulativePnL();
+  }
+
+  private recalculateCumulativePnL(): void {
+    let runningTotal = 0;
+    for (const pair of this.optionPairs) {
+      runningTotal += pair.pnl;
+      pair.cumulative = runningTotal;
+    }
+  }
+
+  private formatTimeIST(timeStr: string): string {
+    // Extract HH:mm:ss from ISO string without timezone conversion
+    // Input format: "2026-07-15T11:03:32+05:30" or "2026-07-15 11:03:32"
+    const match = timeStr.match(/(\d{2}):(\d{2}):(\d{2})/);
+    if (match) {
+      return `${match[1]}:${match[2]}:${match[3]}`;
+    }
+    return timeStr;
   }
 
   private updateAvailableDates(): void {
@@ -130,7 +166,9 @@ export class DashboardComponent implements OnChanges {
           exitPrice,
           pct,
           optionType,
-          cumulative: runningTotal
+          cumulative: runningTotal,
+          entryTimeFormatted: this.formatTimeIST(pair.entryTime),
+          exitTimeFormatted: pair.exitTime ? this.formatTimeIST(pair.exitTime) : null
         };
       });
 

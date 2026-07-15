@@ -111,7 +111,16 @@
 
     <!-- Option Trades Responsive Cards Stack Layout -->
     <div class="trades-section">
-      <h3>Option Trades Details</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0;">Option Trades Details</h3>
+        <button (click)="toggleTimeSort()" class="sort-button" [title]="'Sort by time: ' + timeSortOrder">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <polyline [points]="timeSortOrder === 'asc' ? '19 12 12 19 5 12' : '5 12 12 5 19 12'"></polyline>
+          </svg>
+          Sort by Time ({{ timeSortOrder === 'asc' ? '↑ Earliest' : '↓ Latest' }})
+        </button>
+      </div>
       <div class="trades-list">
 
         <!-- Table Column Headers (Hidden on Mobile) -->
@@ -155,8 +164,8 @@
           <div class="col-time">
             <span class="mobile-label">Execution Time</span>
             <div class="time-flow">
-              <span class="time-val"><span class="label-sub text-muted">In:</span> {{ pair.entryTime | date:'HH:mm:ss' }}</span>
-              <span class="time-val" *ngIf="!pair.isOpen"><span class="label-sub text-muted">Out:</span> {{ pair.exitTime | date:'HH:mm:ss' }}</span>
+              <span class="time-val"><span class="label-sub text-muted">In:</span> {{ pair.entryTimeFormatted }}</span>
+              <span class="time-val" *ngIf="!pair.isOpen"><span class="label-sub text-muted">Out:</span> {{ pair.exitTimeFormatted }}</span>
               <span class="time-val text-muted" *ngIf="pair.isOpen"><span class="label-sub text-muted">Out:</span> -</span>
             </div>
           </div>
