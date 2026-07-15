@@ -28,21 +28,6 @@
     <div class="goat-section">
       <h3>Latest Trades <span class="section-meta">most recent first</span></h3>
 
-      <div class="header-controls">
-        <div class="control-field">
-          <label for="goat-date">Session:</label>
-          <select id="goat-date" class="goat-select" [ngModel]="activeDate" (ngModelChange)="onDateChange($event)">
-            <option *ngFor="let d of availableDates" [value]="d">{{ d | date:'dd MMMM yyyy' }}</option>
-          </select>
-        </div>
-        <div class="control-field">
-          <label for="goat-capital">Capital ₹:</label>
-          <input id="goat-capital" class="goat-select capital-input" type="number" [(ngModel)]="startingCapital" (change)="onCapitalChange()" min="100" step="500">
-          <span class="auto-tag" *ngIf="capitalIsAuto" title="Auto-detected from the first trade of the day">AUTO</span>
-          <button class="auto-btn" *ngIf="!capitalIsAuto" (click)="resetCapitalAuto()" title="Back to auto: use first trade's capital">↺ Auto</button>
-        </div>
-      </div>
-
       <div class="trades-list">
         <div class="trades-list-header">
           <div>Symbol</div>
@@ -223,6 +208,22 @@
     <!-- ============ TRADE TAPE (classic structure + Hold·Gap column) ============ -->
     <div class="goat-section">
       <h3>Trade Tape <span class="section-meta">chronological · net = P&L − charges</span></h3>
+
+      <div class="header-controls">
+        <div class="control-field">
+          <label for="goat-date">Session:</label>
+          <select id="goat-date" class="goat-select" [ngModel]="activeDate" (ngModelChange)="onDateChange($event)">
+            <option *ngFor="let d of availableDates" [value]="d">{{ d | date:'dd MMMM yyyy' }}</option>
+          </select>
+        </div>
+        <div class="control-field">
+          <label for="goat-capital">Capital ₹:</label>
+          <input id="goat-capital" class="goat-select capital-input" type="number" [(ngModel)]="startingCapital" (change)="onCapitalChange()" min="100" step="500">
+          <span class="auto-tag" *ngIf="capitalIsAuto" title="Auto-detected from the first trade of the day">AUTO</span>
+          <button class="auto-btn" *ngIf="!capitalIsAuto" (click)="resetCapitalAuto()" title="Back to auto: use first trade's capital">↺ Auto</button>
+        </div>
+      </div>
+
       <div class="trades-list">
 
         <div class="trades-list-header">
