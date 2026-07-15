@@ -66,6 +66,7 @@ export class GoatDashboardComponent implements OnChanges {
 
   // ---- Day metrics ----
   pairs: GoatPair[] = [];
+  recentPairs: GoatPair[] = []; // last 3 trades, latest first
   dayGross = 0;
   dayCharges = 0;
   dayNet = 0;
@@ -391,6 +392,7 @@ export class GoatDashboardComponent implements OnChanges {
       prevTradeEndMs = p.isOpen ? entryMs : exitMs;
     }
 
+    this.recentPairs = this.pairs.slice(-3).reverse();
     this.currentLossStreak = lossStreak;
     this.dayNet = Math.round((this.dayGross - this.dayCharges) * 100) / 100;
     this.winRate = this.closedTrades > 0 ? (this.wins / this.closedTrades) * 100 : 0;

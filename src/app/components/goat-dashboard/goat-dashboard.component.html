@@ -51,6 +51,36 @@
     <!-- ============ MAIN GRID ============ -->
     <div class="goat-grid">
 
+      <!-- ==== LATEST TRADES STRIP ==== -->
+      <section class="panel span-4 recent-panel" *ngIf="recentPairs.length > 0">
+        <header class="panel-head">
+          <span class="ph-title">Latest Trades</span>
+          <span class="ph-meta">Most recent first</span>
+        </header>
+        <div class="recent-body">
+          <div class="recent-card" *ngFor="let p of recentPairs; let i = index" [class.recent-revenge]="p.isRevenge">
+            <div class="recent-top">
+              <span class="recent-symbol">{{ p.symbol }}</span>
+              <span class="recent-latest" *ngIf="i === 0">LATEST</span>
+            </div>
+            <div class="recent-badges">
+              <span class="badge" [attr.data-ot]="p.optionType">{{ p.optionType }}</span>
+              <span class="badge" [attr.data-side]="p.type">{{ p.type }}</span>
+              <span class="flag-revenge" *ngIf="p.isRevenge">REV</span>
+              <span class="flag-impulse" *ngIf="!p.isRevenge && p.isImpulseGap">FAST</span>
+            </div>
+            <div class="recent-pnl" [class.pos]="p.netPnl > 0" [class.neg]="p.netPnl < 0">
+              {{ p.isOpen ? 'Open' : ((p.netPnl > 0 ? '+' : '') + '₹' + (p.netPnl | number:'1.0-0')) }}
+              <span class="recent-pct" *ngIf="!p.isOpen">({{ p.netPct > 0 ? '+' : '' }}{{ p.netPct | number:'1.1-1' }}%)</span>
+            </div>
+            <div class="recent-meta">
+              <span>{{ p.entryLabel }} → {{ p.isOpen ? 'open' : p.exitLabel }}</span>
+              <span>Hold {{ p.isOpen ? '—' : formatHold(p.holdSeconds) }}<ng-container *ngIf="p.gapSeconds >= 0"> · Gap {{ formatHold(p.gapSeconds) }}</ng-container></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ==== RISK COMMAND ==== -->
       <section class="panel span-2 risk-panel" [attr.data-level]="riskLevel">
         <header class="panel-head">
@@ -71,10 +101,6 @@
             <div class="readout">
               <span class="ro-label">SURVIVAL BUFFER</span>
               <span class="ro-value">₹{{ riskRemaining | number:'1.0-0' }}</span>
-            </div>
-            <div class="readout">
-              <span class="ro-label">OVERALL NET (ALL {{ totalDays }} DAYS)</span>
-              <span class="ro-value" [class.pos]="overallNet > 0" [class.neg]="overallNet < 0">₹{{ overallNet | number:'1.0-0' }}</span>
             </div>
           </div>
 
