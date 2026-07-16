@@ -42,11 +42,14 @@ export class DashboardComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['stats'] && this.stats) {
+      // Follow the newest day on live updates unless the user is viewing an older one
+      const prevLatest = this.availableDates.length > 0 ? this.availableDates[0] : null;
+      const wasOnLatest = !this.activeDate || this.activeDate === prevLatest;
       this.updateAvailableDates();
 
-      // If we don't have an active date, or the old active date is not available,
-      // select the latest date with option trades.
-      if (!this.activeDate || !this.availableDates.includes(this.activeDate)) {
+      // If we were on the latest day, don't have an active date, or the old
+      // active date is not available, select the latest date with option trades.
+      if (wasOnLatest || !this.activeDate || !this.availableDates.includes(this.activeDate)) {
         this.activeDate = this.availableDates.length > 0 ? this.availableDates[0] : null;
       }
       this.loadDashboardData();
@@ -103,8 +106,14 @@ export class DashboardComponent implements OnChanges {
   }
 
   private formatTimeIST(timeStr: string): string {
-    // Extract HH:mm:ss from ISO string without timezone conversion
-    // Input format: "2026-07-15T11:03:32+05:30" or "2026-07-15 11:03:32"
+    // Timestamps with an explicit timezone (live API sends UTC "...T04:59:57.000Z")
+    // must be converted to IST; naive strings like "2026-07-15 11:03:32" already are.
+    if (/Z$|[+-]\d{2}:?\d{2}$/.test(timeStr)) {
+      const d = new Date(timeStr);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString('en-GB', { hour12: false, timeZone: 'Asia/Kolkata' });
+      }
+    }
     const match = timeStr.match(/(\d{2}):(\d{2}):(\d{2})/);
     if (match) {
       return `${match[1]}:${match[2]}:${match[3]}`;

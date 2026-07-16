@@ -143,8 +143,11 @@ export class GoatDashboardComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['stats'] && this.stats) {
       this.restoreCapital();
+      // Follow the newest day on live updates unless the user is viewing an older one
+      const prevLatest = this.availableDates.length > 0 ? this.availableDates[0] : null;
+      const wasOnLatest = !this.activeDate || this.activeDate === prevLatest;
       this.updateAvailableDates();
-      if (!this.activeDate || !this.availableDates.includes(this.activeDate)) {
+      if (wasOnLatest || !this.activeDate || !this.availableDates.includes(this.activeDate)) {
         this.activeDate = this.availableDates.length > 0 ? this.availableDates[0] : null;
       }
       this.recompute();
@@ -199,14 +202,26 @@ export class GoatDashboardComponent implements OnChanges {
     return 'N/A';
   }
 
+  // Live API timestamps are UTC ISO strings ("...T04:59:57.000Z"); convert those
+  // to IST. Strings without a timezone (file uploads) are already IST.
+  private toISTClock(timeStr: string): string | null {
+    if (!/Z$|[+-]\d{2}:?\d{2}$/.test(timeStr)) return null;
+    const d = new Date(timeStr);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleTimeString('en-GB', { hour12: false, timeZone: 'Asia/Kolkata' });
+  }
+
   private timeLabel(timeStr: string | null): string {
     if (!timeStr) return '--:--:--';
+    const ist = this.toISTClock(timeStr);
+    if (ist) return ist;
     const m = timeStr.match(/(\d{2}):(\d{2}):(\d{2})/);
     return m ? `${m[1]}:${m[2]}:${m[3]}` : timeStr;
   }
 
   private hourOf(timeStr: string): number {
-    const m = timeStr.match(/(\d{2}):(\d{2}):(\d{2})/);
+    const ist = this.toISTClock(timeStr);
+    const m = (ist || timeStr).match(/(\d{2}):(\d{2}):(\d{2})/);
     return m ? Number(m[1]) : -1;
   }
 

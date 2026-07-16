@@ -39,6 +39,17 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private subs = new Subscription();
 
+  // ---- Live refresh state ----
+  private dataSource: 'api' | 'file' | null = null;
+  private lastTradeCount = 0;
+  private activeQuery: { start?: string; end?: string } | null = null;
+  private liveRefreshTimer: any = null;
+  private pollIntervalId: any = null;
+  // Kite's trade book can lag the websocket postback by several seconds,
+  // so a fill is re-fetched on this ladder until the new trade appears.
+  private readonly LIVE_RETRY_DELAYS = [1500, 3000, 6000, 12000];
+  private readonly FALLBACK_POLL_MS = 60000;
+
   constructor(
     private tradeParser: TradeParserService,
     private zerodhaService: ZerodhaService
@@ -56,6 +67,10 @@ export class AppComponent implements OnInit, OnDestroy {
             this.wakingTimeout = null;
           }
           this.fetchKeepaliveStatus();
+          // Catch up on fills that happened while the socket was down
+          if (this.isZerodhaLoggedIn) {
+            this.refreshTradesSilently();
+          }
         }
       })
     );
@@ -66,12 +81,17 @@ export class AppComponent implements OnInit, OnDestroy {
     );
     this.subs.add(
       this.zerodhaService.tradeUpdate$.subscribe(trade => {
-        console.log('Real-time trade update received. Scheduling fetch in 2s...', trade);
-        setTimeout(() => {
-          this.fetchTrades(true); // Fetch silently in the background after 2s delay
-        }, 2000);
+        console.log('Real-time trade update received:', trade);
+        this.scheduleLiveRefresh();
       })
     );
+
+    // Safety net: catch fills whose socket event was missed entirely
+    this.pollIntervalId = setInterval(() => {
+      if (this.isZerodhaLoggedIn && this.isServerConnected && !this.isLoading) {
+        this.refreshTradesSilently();
+      }
+    }, this.FALLBACK_POLL_MS);
 
     window.addEventListener('message', this.handleAuthMessage);
   }
@@ -81,6 +101,12 @@ export class AppComponent implements OnInit, OnDestroy {
     window.removeEventListener('message', this.handleAuthMessage);
     if (this.wakingTimeout) {
       clearTimeout(this.wakingTimeout);
+    }
+    if (this.liveRefreshTimer) {
+      clearTimeout(this.liveRefreshTimer);
+    }
+    if (this.pollIntervalId) {
+      clearInterval(this.pollIntervalId);
     }
   }
 
@@ -107,40 +133,111 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   fetchTrades(silent = false) {
-    this.error = null;
     if (!silent) {
+      this.error = null;
       this.isLoading = true;
+      this.activeQuery = null;
     }
-    this.zerodhaService.getHistoricalTrades().subscribe({
+    const query = silent ? this.activeQuery : null;
+    this.zerodhaService.getHistoricalTrades(query?.start, query?.end).subscribe({
       next: (trades) => {
         this.isLoading = false;
-        if (trades && trades.length > 0) {
-          try {
-            this.dailyStats = this.tradeParser.parseZerodhaApiTrades(trades);
-            // Auto-navigate to calendar after data loads
-            if (this.activePage === 'data-sources') {
-              this.activePage = 'calendar';
-            }
-          } catch (e: any) {
-            this.error = 'Failed to parse live trades: ' + (e.message || e);
-            this.dailyStats = null;
-          }
-        } else {
-          this.error = "No trades found on this account today.";
-          this.dailyStats = null;
-        }
+        this.applyTrades(trades, silent);
       },
-      error: (err) => {
-        this.isLoading = false;
-        console.error('Error fetching trades', err);
-        if (err.status === 401 || err.status === 403) {
-          this.isZerodhaLoggedIn = false;
-          this.error = 'Zerodha session expired or invalid. Please login again.';
-        } else {
-          this.error = 'Could not fetch trades from Zerodha API.';
-        }
-      }
+      error: (err) => this.handleFetchError(err, silent)
     });
+  }
+
+  /**
+   * Applies fetched trades to the app state.
+   * Returns true when the data actually changed.
+   * Silent mode never wipes existing data, never shows non-auth errors
+   * and never navigates — it only updates in place.
+   */
+  private applyTrades(trades: any[], silent: boolean): boolean {
+    if (!trades || trades.length === 0) {
+      if (!silent) {
+        this.error = "No trades found on this account today.";
+        this.dailyStats = null;
+        this.lastTradeCount = 0;
+        this.dataSource = null;
+      }
+      return false;
+    }
+
+    if (silent && this.dailyStats && trades.length === this.lastTradeCount) {
+      return false; // nothing new yet
+    }
+
+    try {
+      this.dailyStats = this.tradeParser.parseZerodhaApiTrades(trades);
+      this.lastTradeCount = trades.length;
+      this.dataSource = 'api';
+      // Auto-navigate to calendar after data loads
+      if (!silent && this.activePage === 'data-sources') {
+        this.activePage = 'calendar';
+      }
+      return true;
+    } catch (e: any) {
+      if (!silent) {
+        this.error = 'Failed to parse live trades: ' + (e.message || e);
+        this.dailyStats = null;
+      }
+      console.error('Error parsing live trades', e);
+      return false;
+    }
+  }
+
+  private handleFetchError(err: any, silent: boolean) {
+    this.isLoading = false;
+    console.error('Error fetching trades', err);
+    if (err.status === 401 || err.status === 403) {
+      this.isZerodhaLoggedIn = false;
+      this.error = 'Zerodha session expired or invalid. Please login again.';
+    } else if (!silent) {
+      this.error = 'Could not fetch trades from Zerodha API.';
+    }
+  }
+
+  /** One-shot background refresh (reconnect catch-up / fallback poll). */
+  private refreshTradesSilently() {
+    if (this.dataSource === 'file') return; // don't clobber an uploaded tradebook
+    this.fetchTrades(true);
+  }
+
+  /**
+   * After an order-fill event, re-fetch until the new trade shows up.
+   * Kite's trade book often lags the websocket postback, so a single
+   * fixed-delay fetch can miss the fill and leave the UI stale.
+   */
+  private scheduleLiveRefresh() {
+    if (this.dataSource === 'file') return;
+    if (this.liveRefreshTimer) {
+      clearTimeout(this.liveRefreshTimer);
+      this.liveRefreshTimer = null;
+    }
+
+    let attempt = 0;
+    const run = () => {
+      this.liveRefreshTimer = null;
+      this.zerodhaService.getHistoricalTrades(this.activeQuery?.start, this.activeQuery?.end).subscribe({
+        next: (trades) => {
+          const changed = this.applyTrades(trades, true);
+          attempt++;
+          if (!changed && attempt < this.LIVE_RETRY_DELAYS.length) {
+            this.liveRefreshTimer = setTimeout(run, this.LIVE_RETRY_DELAYS[attempt]);
+          }
+        },
+        error: (err) => {
+          this.handleFetchError(err, true);
+          attempt++;
+          if (this.isZerodhaLoggedIn && attempt < this.LIVE_RETRY_DELAYS.length) {
+            this.liveRefreshTimer = setTimeout(run, this.LIVE_RETRY_DELAYS[attempt]);
+          }
+        }
+      });
+    };
+    this.liveRefreshTimer = setTimeout(run, this.LIVE_RETRY_DELAYS[0]);
   }
 
   loginZerodha() {
@@ -240,6 +337,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.tradeParser.parseTradebook(buffer)
       .then(stats => {
         this.dailyStats = stats;
+        this.dataSource = 'file';
+        this.lastTradeCount = 0;
+        this.activeQuery = null;
         this.isLoading = false;
         this.activePage = 'calendar';
       })
@@ -265,6 +365,10 @@ export class AppComponent implements OnInit, OnDestroy {
         if (trades && trades.length > 0) {
           try {
             this.dailyStats = this.tradeParser.parseZerodhaApiTrades(trades);
+            this.dataSource = 'api';
+            this.lastTradeCount = trades.length;
+            // Remember the query so background refreshes keep the same period view
+            this.activeQuery = { start: this.startDate || undefined, end: this.endDate || undefined };
             this.activePage = 'calendar';
           } catch (e: any) {
             this.periodError = 'Failed to parse fetched trades: ' + (e.message || e);
