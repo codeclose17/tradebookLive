@@ -1,0 +1,126 @@
+<div class="live-section" *ngIf="trades.length > 0">
+
+  <div class="live-header">
+    <div class="live-title">
+      <h3>
+        <span class="pulse-dot" [class.live]="isFeedLive"></span>
+        Live Positions
+        <span class="section-meta">{{ trades.length }} open · exit plan below</span>
+      </h3>
+    </div>
+
+    <div class="live-header-right">
+      <div class="live-total">
+        <span class="lt-label">Open P&amp;L</span>
+        <span class="lt-value" [class.text-green]="totalOpenPnl > 0" [class.text-red]="totalOpenPnl < 0">
+          {{ totalOpenPnl >= 0 ? '+' : '−' }}₹{{ (totalOpenPnl < 0 ? -totalOpenPnl : totalOpenPnl) | number:'1.0-0' }}
+        </span>
+      </div>
+      <div class="live-total">
+        <span class="lt-label">Risk at Stop</span>
+        <span class="lt-value text-amber">₹{{ totalRiskAtStop | number:'1.0-0' }}</span>
+      </div>
+      <div class="plan-control">
+        <label for="sl-pct">Stop %</label>
+        <input id="sl-pct" type="number" min="1" max="90" step="1"
+               [(ngModel)]="slPct" (ngModelChange)="onPlanChange()" class="plan-input">
+      </div>
+    </div>
+  </div>
+
+  <div class="live-grid">
+    <div class="live-card" *ngFor="let t of trades; trackBy: trackByToken"
+         [attr.data-tone]="t.verdictTone">
+
+      <!-- Row 1: identity + live price -->
+      <div class="lc-top">
+        <div class="lc-ident">
+          <span class="lc-symbol">{{ t.symbol }}</span>
+          <span class="lc-badge" [class.long]="t.direction === 'Long'" [class.short]="t.direction === 'Short'">
+            {{ t.direction }}
+          </span>
+          <span class="lc-qty">{{ t.qty }} qty</span>
+        </div>
+
+        <div class="lc-price">
+          <span class="lc-ltp-label">
+            LTP
+            <span class="stale-flag" *ngIf="!t.hasLivePrice" title="No live tick yet — showing Kite's last snapshot">snapshot</span>
+          </span>
+          <span class="lc-ltp">₹{{ t.ltp | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Row 2: the numbers that matter -->
+      <div class="lc-readouts">
+        <div class="lc-ro">
+          <span class="ro-label">Entry</span>
+          <span class="ro-value">₹{{ t.entryPrice | number:'1.2-2' }}</span>
+        </div>
+        <div class="lc-ro">
+          <span class="ro-label">Live P&amp;L</span>
+          <span class="ro-value" [class.text-green]="t.pnl > 0" [class.text-red]="t.pnl < 0">
+            {{ t.pnl >= 0 ? '+' : '−' }}₹{{ (t.pnl < 0 ? -t.pnl : t.pnl) | number:'1.0-0' }}
+          </span>
+        </div>
+        <div class="lc-ro">
+          <span class="ro-label">Move</span>
+          <span class="ro-value" [class.text-green]="t.pnlPct > 0" [class.text-red]="t.pnlPct < 0">
+            {{ t.pnlPct > 0 ? '+' : '' }}{{ t.pnlPct | number:'1.1-1' }}%
+          </span>
+        </div>
+        <div class="lc-ro">
+          <span class="ro-label">R Multiple</span>
+          <span class="ro-value" [class.text-green]="t.rNow > 0" [class.text-red]="t.rNow < 0">
+            {{ t.rNow > 0 ? '+' : '' }}{{ t.rNow | number:'1.1-1' }}R
+          </span>
+        </div>
+      </div>
+
+      <!-- Row 3: SL → target ladder -->
+      <div class="ladder">
+        <div class="ladder-track">
+          <div class="ladder-fill" [style.width.%]="t.progressPct"
+               [class.in-loss]="t.rNow < 0" [class.in-profit]="t.rNow >= 0"></div>
+          <div class="ladder-entry-mark" [style.left.%]="t.entryMarkPct" title="Entry"></div>
+          <div class="ladder-head" [style.left.%]="t.progressPct"></div>
+        </div>
+        <div class="ladder-scale">
+          <span class="scale-sl">SL ₹{{ t.slPrice | number:'1.2-2' }}</span>
+          <span class="scale-t" *ngFor="let tg of t.targets" [class.hit]="tg.hit">
+            {{ tg.label }} ₹{{ tg.price | number:'1.2-2' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Row 4: exit table — the actual point of this panel -->
+      <div class="exit-table">
+        <div class="exit-row sl-row" [class.breached]="t.slBreached">
+          <span class="ex-tag sl-tag">STOP</span>
+          <span class="ex-price">₹{{ t.slPrice | number:'1.2-2' }}</span>
+          <span class="ex-pct">−{{ t.slPct | number:'1.0-0' }}%</span>
+          <span class="ex-value text-red">−₹{{ t.slRisk | number:'1.0-0' }}</span>
+        </div>
+        <div class="exit-row" *ngFor="let tg of t.targets" [class.hit]="tg.hit">
+          <span class="ex-tag t-tag" [class.hit]="tg.hit">
+            {{ tg.label }}<span class="r-badge">{{ tg.rMultiple }}R</span>
+          </span>
+          <span class="ex-price">₹{{ tg.price | number:'1.2-2' }}</span>
+          <span class="ex-pct">+{{ tg.gainPct | number:'1.0-0' }}%</span>
+          <span class="ex-value text-green">+₹{{ tg.gain | number:'1.0-0' }}</span>
+        </div>
+      </div>
+
+      <!-- Row 5: what to actually do -->
+      <div class="verdict" [attr.data-tone]="t.verdictTone">{{ t.verdict }}</div>
+
+      <div class="risk-warn" *ngIf="exceedsSessionRisk(t)">
+        ⚠ This stop risks ₹{{ t.slRisk | number:'1.0-0' }} but only ₹{{ riskRemaining | number:'1.0-0' }} of your session budget is left. Cut size or tighten the stop.
+      </div>
+    </div>
+  </div>
+
+  <p class="feed-note" *ngIf="!isFeedLive">
+    Feed offline — prices are Kite snapshots refreshed every 30s, not live ticks.
+  </p>
+</div>

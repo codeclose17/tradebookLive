@@ -1,10 +1,16 @@
+/* Months flow into however many columns the viewport fits, rather than one
+   stretched month per row. 460px keeps a 7-day grid readable. */
 .calendar-container {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  align-items: start;
+  gap: 32px;
   width: 100%;
-  max-width: 1000px;
   margin: 0 auto;
+}
+
+.calendar-container .empty-state {
+  grid-column: 1 / -1;
 }
 
 .empty-state {
@@ -189,7 +195,6 @@
   display: flex;
   justify-content: flex-end;
   width: 100%;
-  max-width: 1000px;
   margin: 0 auto 20px auto;
 }
 
@@ -214,7 +219,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
-  max-width: 1200px;
 }
 
 .minimized-view .month-block {

@@ -18,6 +18,25 @@ export interface ZerodhaTrade {
   transaction_type: string;
 }
 
+/** An open position as reported by Kite (net book, quantity !== 0). */
+export interface ZerodhaPosition {
+  tradingsymbol: string;
+  exchange: string;
+  instrument_token: number;
+  product: string;
+  quantity: number;
+  average_price: number;
+  last_price: number;
+  pnl: number;
+  unrealised: number;
+  value: number;
+}
+
+export interface Tick {
+  instrument_token: number;
+  last_price: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -30,11 +49,20 @@ export class ZerodhaService {
   private tradeUpdateSubject = new Subject<ZerodhaTrade>();
   tradeUpdate$ = this.tradeUpdateSubject.asObservable();
   
-  private connectionStatusSubject = new Subject<boolean>();
+  // Connection state, not an event: ticker_status arrives once on socket
+  // connect, so late subscribers (a tab opened later) must still get it.
+  private connectionStatusSubject = new BehaviorSubject<boolean>(false);
   connectionStatus$ = this.connectionStatusSubject.asObservable();
 
   private serverConnectedSubject = new BehaviorSubject<boolean>(false);
   serverConnected$ = this.serverConnectedSubject.asObservable();
+
+  /** Latest LTP per instrument token, replayed to late subscribers. */
+  private ticksSubject = new BehaviorSubject<Map<number, number>>(new Map());
+  ticks$ = this.ticksSubject.asObservable();
+
+  private positionsSubject = new BehaviorSubject<ZerodhaPosition[]>([]);
+  positions$ = this.positionsSubject.asObservable();
 
   constructor(private http: HttpClient, private ngZone: NgZone) {
     const socketUrl = window.location.port === '4200'
@@ -68,6 +96,31 @@ export class ZerodhaService {
         this.tradeUpdateSubject.next(order as ZerodhaTrade);
       });
     });
+
+    this.socket.on('ticks', (ticks: Tick[]) => {
+      if (!ticks || ticks.length === 0) return;
+      this.ngZone.run(() => {
+        // New Map each emit so OnPush/change detection sees a new reference
+        const next = new Map(this.ticksSubject.value);
+        for (const t of ticks) next.set(t.instrument_token, t.last_price);
+        this.ticksSubject.next(next);
+      });
+    });
+
+    this.socket.on('positions_update', (payload: { positions: ZerodhaPosition[] }) => {
+      this.ngZone.run(() => {
+        this.positionsSubject.next(payload?.positions || []);
+      });
+    });
+  }
+
+  getPositions(): Observable<ZerodhaPosition[]> {
+    return this.http.get<ZerodhaPosition[]>(`${this.apiUrl}/positions`);
+  }
+
+  /** Pushes REST-fetched positions into the same stream the socket feeds. */
+  publishPositions(positions: ZerodhaPosition[]): void {
+    this.positionsSubject.next(positions);
   }
 
   ping(): Observable<any> {

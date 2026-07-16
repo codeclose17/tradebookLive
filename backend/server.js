@@ -1,3 +1,9 @@
+// MUST run before anything parses a date. The Kite SDK converts the API's
+// naive IST timestamps ("2026-07-13 10:29:57") with new Date(), which resolves
+// against the host's local timezone. On a UTC host (Render) that silently
+// shifts every trade time by -5:30, so the timezone is pinned here instead.
+process.env.TZ = 'Asia/Kolkata';
+
 require('dotenv').config({ path: __dirname + '/.env' });
 const express = require('express');
 const cors = require('cors');
@@ -35,6 +41,44 @@ let currentAccessToken = null;
 let ticker = null;
 let isTickerConnected = false;
 
+// Instrument tokens currently streamed for open positions
+let subscribedTokens = [];
+// Latest LTP per token, flushed to clients on an interval (ticks arrive far
+// faster than any UI needs, and socket.io does no coalescing of its own).
+let pendingTicks = new Map();
+let tickFlushId = null;
+const TICK_FLUSH_MS = 500;
+
+// ---- Timestamp normalisation -------------------------------------------
+// Everything leaving this server carries an explicit +05:30 offset, so the
+// frontend never has to infer a timezone from a bare wall-clock string.
+const IST_OFFSET = '+05:30';
+const IST_PARTS = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Kolkata',
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit',
+  hourCycle: 'h23'
+});
+
+function toIstIso(value) {
+  if (!value) return value;
+  const d = value instanceof Date ? value : new Date(value);
+  if (isNaN(d.getTime())) return value;
+  const p = {};
+  for (const part of IST_PARTS.formatToParts(d)) p[part.type] = part.value;
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}${IST_OFFSET}`;
+}
+
+const TIMESTAMP_FIELDS = ['fill_timestamp', 'exchange_timestamp', 'order_timestamp'];
+
+function normalizeTrade(trade) {
+  const out = { ...trade };
+  for (const field of TIMESTAMP_FIELDS) {
+    if (out[field]) out[field] = toIstIso(out[field]);
+  }
+  return out;
+}
+
 function initTicker(token) {
   if (ticker) {
     try {
@@ -56,6 +100,18 @@ function initTicker(token) {
     console.log('KiteTicker connected successfully');
     isTickerConnected = true;
     io.emit('ticker_status', { connected: true });
+    // Re-subscribe: a reconnect drops all prior subscriptions
+    subscribedTokens = [];
+    syncPositionSubscriptions();
+  });
+
+  ticker.on('ticks', (ticks) => {
+    for (const t of ticks) {
+      if (t && t.instrument_token != null && t.last_price != null) {
+        pendingTicks.set(t.instrument_token, t.last_price);
+      }
+    }
+    scheduleTickFlush();
   });
 
   ticker.on('disconnect', () => {
@@ -85,11 +141,58 @@ function initTicker(token) {
   ticker.on('order_update', (order) => {
     console.log('Order update received from KiteTicker:', order.order_id, order.status);
     if (order.status === 'COMPLETE') {
-      io.emit('trade_update', order);
+      io.emit('trade_update', normalizeTrade(order));
+      // A fill opens or closes a position — restream against the new book
+      syncPositionSubscriptions();
     }
   });
 
   ticker.connect();
+}
+
+function scheduleTickFlush() {
+  if (tickFlushId) return;
+  tickFlushId = setTimeout(() => {
+    tickFlushId = null;
+    if (pendingTicks.size === 0) return;
+    const payload = Array.from(pendingTicks, ([instrument_token, last_price]) => ({
+      instrument_token,
+      last_price
+    }));
+    pendingTicks.clear();
+    io.emit('ticks', payload);
+  }, TICK_FLUSH_MS);
+}
+
+function sameTokens(a, b) {
+  return a.length === b.length && a.every(t => b.includes(t));
+}
+
+/** Streams live LTP for every open position, and only those. */
+async function syncPositionSubscriptions() {
+  if (!currentAccessToken || !ticker || !isTickerConnected) return;
+
+  try {
+    const positions = await kc.getPositions();
+    const open = (positions.net || []).filter(p => p.quantity !== 0);
+    const tokens = open.map(p => p.instrument_token).filter(t => t != null);
+
+    io.emit('positions_update', { positions: open.map(normalizeTrade) });
+
+    if (sameTokens(tokens, subscribedTokens)) return;
+
+    const stale = subscribedTokens.filter(t => !tokens.includes(t));
+    if (stale.length > 0) ticker.unsubscribe(stale);
+
+    if (tokens.length > 0) {
+      ticker.subscribe(tokens);
+      ticker.setMode(ticker.modeLTP, tokens);
+    }
+    subscribedTokens = tokens;
+    console.log(`Streaming LTP for ${tokens.length} open position(s):`, tokens);
+  } catch (e) {
+    console.error('Error syncing position subscriptions:', e && e.message);
+  }
 }
 
 app.get('/api/auth/url', (req, res) => {
@@ -140,7 +243,8 @@ app.get('/api/trades', async (req, res) => {
   }
   
   try {
-    const trades = await kc.getTrades();
+    const rawTrades = await kc.getTrades();
+    const trades = rawTrades.map(normalizeTrade);
     console.log(`Fetched ${trades.length} today's trades from Kite API`);
 
     // Local JSON database to persist trades across runs and build history
@@ -151,7 +255,9 @@ app.get('/api/trades', async (req, res) => {
     
     if (fs.existsSync(dbPath)) {
       try {
-        allTrades = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        // Older rows were stored as bare UTC instants; normalise on read so
+        // the whole history goes out in one canonical IST format.
+        allTrades = JSON.parse(fs.readFileSync(dbPath, 'utf8')).map(normalizeTrade);
       } catch (e) {
         console.error('Error reading/parsing trades_db.json:', e);
       }
@@ -178,10 +284,12 @@ app.get('/api/trades', async (req, res) => {
       filteredTrades = allTrades.filter(t => {
         const timestamp = t.fill_timestamp || t.exchange_timestamp;
         if (!timestamp) return false;
-        
-        // Convert to YYYY-MM-DD
-        const tDate = new Date(timestamp).toISOString().split('T')[0];
-        
+
+        // Timestamps are canonical IST ISO, so the date is the leading
+        // YYYY-MM-DD — going through toISOString() here would compare
+        // against the UTC calendar day instead of the trading day.
+        const tDate = String(timestamp).slice(0, 10);
+
         if (startDate && tDate < startDate) return false;
         if (endDate && tDate > endDate) return false;
         return true;
@@ -195,9 +303,26 @@ app.get('/api/trades', async (req, res) => {
   }
 });
 
+// Open positions, with the ticker streaming their LTP as a side effect
+app.get('/api/positions', async (req, res) => {
+  if (!currentAccessToken) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    const positions = await kc.getPositions();
+    const open = (positions.net || []).filter(p => p.quantity !== 0);
+    syncPositionSubscriptions();
+    res.json(open.map(normalizeTrade));
+  } catch (error) {
+    console.error('Error fetching positions:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Wake-up endpoint for the frontend
 app.get('/api/ping', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
+  res.json({ status: 'ok', timestamp: toIstIso(new Date()) });
 });
 
 // Self-ping workaround to prevent Render sleeping on free tier (toglable)
@@ -268,7 +393,10 @@ app.post('/api/keepalive/stop', (req, res) => {
 io.on('connection', (socket) => {
   console.log('A client connected');
   socket.emit('ticker_status', { connected: isTickerConnected });
-  
+  // A fresh client has no prices until the next tick, which on an illiquid
+  // strike can be a while — push the current book straight away.
+  syncPositionSubscriptions();
+
   socket.on('disconnect', () => {
     console.log('Client disconnected');
   });

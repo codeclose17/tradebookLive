@@ -2,6 +2,7 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DailyStat } from '../../services/trade-parser.service';
+import { LivePositionsComponent } from '../live-positions/live-positions.component';
 
 interface HourBucket {
   label: string;
@@ -48,7 +49,7 @@ type RiskLevel = 'SAFE' | 'CAUTION' | 'DANGER' | 'BREACH';
 @Component({
   selector: 'app-goat-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LivePositionsComponent],
   templateUrl: './goat-dashboard.component.html',
   styleUrls: ['./goat-dashboard.component.css']
 })

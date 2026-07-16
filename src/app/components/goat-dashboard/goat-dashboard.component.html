@@ -9,6 +9,10 @@
     <span class="risk-chip" [attr.data-level]="riskLevel"><span class="chip-dot"></span>{{ riskLevel }}</span>
   </div>
 
+  <!-- ============ LIVE POSITIONS (self-hides when flat) ============ -->
+  <!-- Outside the data guard: an open position matters even with no history loaded -->
+  <app-live-positions [riskRemaining]="availableDates.length > 0 ? riskRemaining : -1"></app-live-positions>
+
   <div *ngIf="availableDates.length === 0" class="no-data-state">
     <p>No options trading data loaded. Load trades from the Data Sources page to power up the terminal.</p>
   </div>
