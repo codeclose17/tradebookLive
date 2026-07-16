@@ -445,25 +445,25 @@ circle.dot-down { fill: #f87171; }
 
 .mobile-label { display: none; }
 
-.symbol-block { display: flex; flex-direction: column; gap: 8px; }
-.symbol-name { font-weight: 600; color: #ffffff; font-size: 1.375rem; }
+.symbol-block { display: flex; flex-direction: column; gap: 4px; }
+.symbol-name { font-weight: 600; color: #ffffff; font-size: 1.05rem; }
 .badge-row { display: flex; gap: 6px; flex-wrap: wrap; }
 
-.qty-flow, .time-flow, .capital-flow, .pnl-flow, .charges-flow { display: flex; flex-direction: column; gap: 4px; }
+.qty-flow, .time-flow, .capital-flow, .pnl-flow, .charges-flow { display: flex; flex-direction: column; gap: 2px; }
 
 /* Charges column */
-.charge-val { font-weight: 600; font-size: 1.125rem; }
-.charge-pct { font-size: 0.75rem; color: rgba(156, 163, 175, 0.7); font-weight: 400; }
-.cumul-charge { font-size: 0.75rem; color: rgba(156, 163, 175, 0.5); font-weight: 400; }
+.charge-val { font-weight: 700; font-size: 0.95rem; }
+.charge-pct { font-size: 0.75rem; color: #9ca3af; }
+.cumul-charge { font-size: 0.75rem; color: #6b7280; font-weight: 500; }
 
-.qty-val { font-weight: 600; color: #e5e7eb; font-size: 1.125rem; }
-.price-flow, .charges-val, .pct-val, .label-sub { font-size: 0.75rem; color: rgba(156, 163, 175, 0.7); font-weight: 400; }
+.qty-val { font-weight: 600; color: #e5e7eb; font-size: 0.95rem; }
+.price-flow, .charges-val, .pct-val, .label-sub { font-size: 0.75rem; color: #9ca3af; }
 .text-orange { color: #fdba74 !important; }
-.time-val { font-size: 0.875rem; color: rgba(156, 163, 175, 0.7); font-weight: 400; }
-.pnl-val { font-weight: 700; font-size: 1.375rem; }
-.rem-val { font-size: 0.875rem; color: rgba(156, 163, 175, 0.7); font-weight: 400; }
-.cumulative-val { font-size: 0.75rem; color: rgba(156, 163, 175, 0.5); margin-top: 6px; font-weight: 400; }
-.text-bold { font-weight: 600; color: rgba(255,255,255,0.7); }
+.time-val { font-size: 0.85rem; color: #d1d5db; }
+.pnl-val { font-weight: 700; font-size: 1.05rem; }
+.rem-val { font-size: 0.8rem; color: #e5e7eb; }
+.cumulative-val { font-size: 0.75rem; color: #9ca3af; margin-top: 4px; }
+.text-bold { font-weight: 600; color: #ffffff; }
 
 /* Badges (exact copy) */
 .badge {
